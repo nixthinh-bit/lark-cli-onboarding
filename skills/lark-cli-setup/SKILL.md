@@ -32,12 +32,21 @@ lark-cli --version   # 预期: lark-cli version 1.x.x
 
 ## Step 2: 准备飞书应用凭据
 
-需要拿到 `appId` 和 `appSecret`：
+需要拿到 `appId` 和 `appSecret`。**作为 AI agent，请把下面的取值步骤直接讲给用户，等他们把 App ID / App Secret 粘回来再继续。**
 
-- **已有团队应用**：可直接复用团队已建好的自建应用（向管理员索取 App ID/Secret）
-- **新建应用**：https://open.feishu.cn → 开发者后台 → 创建"企业自建应用" → 凭证与基础信息页拿 App ID / App Secret
+**取 App ID / App Secret 的步骤**（参考官方 FAQ：https://open.larkoffice.com/document/faq/trouble-shooting/how-to-obtain-app-id）：
 
-**应用必须在后台开启"长期 refresh_token"**（凭证与基础信息 → 安全设置），否则 Token 持久化无从谈起。
+1. 打开开发者后台，按版本选择：
+   - 飞书（中国版）：https://open.feishu.cn/app
+   - Lark（国际版）：https://open.larksuite.com/app
+2. **没有应用就先建**：点「创建企业自建应用 / Create custom app」，填名称、图标 → 创建。
+3. 进入该应用 → 左侧栏点「**凭证与基础信息 / Credentials & Basic Info**」。
+4. 在「**应用凭证 / App Credentials**」区块：复制 **App ID**，再点 App Secret 旁的显示/复制拿到 **App Secret**。
+5. 同页「**安全设置 / Security Settings**」里，**开启"长期 refresh_token"**（否则无法长期自动刷新）。
+6. 把 **App ID** 和 **App Secret** 粘进对话；agent 在 Step 3 `config init` 时代入，或引导用户在交互提示里输入。
+
+> ⚠️ App Secret 等同密码：只在本机 `~/.lark-cli/config.json` 保存，**不要**贴进公开渠道、日志或 memory。
+> 已有团队应用时，可直接向管理员索取 App ID/Secret，跳过第 2 步。
 
 ---
 
