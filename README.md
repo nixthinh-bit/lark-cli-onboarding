@@ -1,43 +1,37 @@
 # lark-cli-onboarding
 
-**Gửi 1 link → người nhận chạy 1 lệnh → Claude Code điều khiển được Lark/Feishu.**
+> **Gửi một link — người nhận chạy một lệnh — Claude Code điều khiển được Lark/Feishu.**
 
-Đây là phiên bản "chia sẻ bằng link" của cách kết nối Lark **qua CLI + Bash** (không dùng MCP). Nó đóng gói:
+![status](https://img.shields.io/badge/status-active-brightgreen)
+![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue)
+![license](https://img.shields.io/badge/license-MIT-yellow)
 
-- Bản CLI chính thống **`@larksuite/cli`** (cài mới nhất từ npm),
-- Skill **`lark-cli-setup`** để Claude Code tự dẫn/tự chạy quy trình cài,
-- Helper **`lark-cli-ensure-auth`** giữ token user luôn tươi,
-- Một **hook SessionStart** của Claude Code tự refresh token mỗi phiên — **không bao giờ bật trình duyệt ngầm**.
+## Giới thiệu
 
-Sau khi cài, bạn làm việc với Lark ngay trong Claude Code: nó **tự gõ lệnh `lark-cli …` qua Bash** rồi đọc kết quả. Không cần MCP server.
+`lark-cli-onboarding` là một bộ cài **một lệnh** giúp [Claude Code](https://claude.com/claude-code) điều khiển không gian làm việc **Lark/Feishu** của bạn — đọc mail, tóm tắt cuộc họp, quản lý task, gửi tin nhắn, tạo tài liệu, thao tác Base — bằng ngôn ngữ tự nhiên, ngay trong terminal.
 
----
+**Vấn đề nó giải quyết:** [`@larksuite/cli`](https://github.com/larksuite/cli) chính thống rất mạnh (200+ lệnh) nhưng để một người mới dùng được cần: cài đúng, tạo app lấy credential, đăng nhập OAuth, và token user hết hạn mỗi ~2 giờ. `lark-cli-onboarding` gói toàn bộ khâu thiết lập đó lại — **clone → `./install.sh` → xong** — kèm cơ chế **tự làm mới token** để không phải đăng nhập lại liên tục.
 
-## A. Dành cho người PUBLISH — đưa repo lên GitHub
+Khác với cách dùng MCP: repo này để Claude Code **chạy thẳng `lark-cli` qua Bash** (không cần MCP server), nên luôn dùng được **toàn bộ** lệnh của CLI và CLI luôn ở bản mới nhất.
 
-> Các link dưới đã trỏ sẵn tới `nixthinh-bit/lark-cli-onboarding`. Nếu bạn fork hoặc đổi tên repo, nhớ sửa lại cho khớp.
+## Tính năng nổi bật
 
-1. Tạo repo **rỗng** trên GitHub: <https://github.com/new> → đặt tên → **Public** → **không** tick thêm README/.gitignore/license.
-2. Trong thư mục repo này, nối remote và đẩy lên:
+- 🚀 **Cài một lệnh** — `install.sh` lo hết: cài CLI, skill, helper, hook.
+- 🔄 **Token tự làm mới** — hook `SessionStart` của Claude Code refresh token im lặng mỗi phiên, **không bao giờ tự bật trình duyệt**.
+- 📱 **Đăng nhập bằng QR** — quét mã bằng app Lark/Feishu trên điện thoại, khỏi cần đăng nhập trên desktop.
+- 🧠 **Skill dẫn đường** — gõ *"kết nối giúp tôi lark-cli"* trong Claude Code, skill `lark-cli-setup` hướng dẫn từng bước.
+- 🆕 **Luôn mới nhất** — cài `@larksuite/cli@latest` từ npm; cập nhật chỉ là `npm update`.
+- 🔐 **An toàn mặc định** — credential lưu cục bộ (`chmod 600`), ưu tiên `--dry-run` cho thao tác ghi, repo không chứa secret.
+- ♻️ **Idempotent** — chạy lại `install.sh` không nhân đôi hook hay cấu hình.
 
-```bash
-cd lark-cli-onboarding
-git branch -M main
-git remote add origin https://github.com/nixthinh-bit/lark-cli-onboarding.git   # bỏ qua nếu đã có remote
-git push -u origin main
-```
+## Cài đặt
 
-3. Kiểm tra link "1 lệnh" đã public:
-   `https://raw.githubusercontent.com/nixthinh-bit/lark-cli-onboarding/main/install.sh`
-4. Gửi link repo cho người dùng — lệnh cài ở mục B đã sẵn đường dẫn thật.
+### Yêu cầu
+- macOS hoặc Linux (Windows dùng WSL)
+- [Node.js](https://nodejs.org) ≥ 18, `npm`, `python3`
+- Một ứng dụng Feishu/Lark (App ID + App Secret) — hướng dẫn lấy ở [bước 2](#2-lấy-app-id--app-secret-một-lần)
 
-Cập nhật về sau: chỉnh code → `git push`. Người nhận chạy lại `git pull && ./install.sh` (idempotent, hook không nhân đôi).
-
----
-
-## B. Dành cho người NHẬN — cài đặt
-
-**Cách 1 — clone rồi chạy (minh bạch, khuyến nghị):**
+### 1. Chạy bộ cài
 
 ```bash
 git clone https://github.com/nixthinh-bit/lark-cli-onboarding.git
@@ -45,118 +39,107 @@ cd lark-cli-onboarding
 ./install.sh
 ```
 
-**Cách 2 — một dòng:**
+Hoặc một dòng:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nixthinh-bit/lark-cli-onboarding/main/install.sh | bash
 ```
 
-`install.sh` tự cài `@larksuite/cli` + skill + helper refresh + hook. Sau đó nó in ra 2 việc bạn làm **một lần**: lấy App ID/Secret (xem mục dưới) và `lark-cli auth login` (quét QR hoặc trình duyệt). Cuối cùng **restart Claude Code**.
-
-Gỡ: `./uninstall.sh`
-
 > 💡 Nên đọc `install.sh` trước khi chạy (nhất là với `curl | bash`) — script ngắn, minh bạch.
 
-## Yêu cầu
+`install.sh` sẽ: cài `@larksuite/cli@latest` → cài skill vào `~/.claude/skills` → cài helper vào `~/.local/bin` → cắm hook auto-refresh vào `~/.claude/settings.json`. Gỡ bất cứ lúc nào bằng `./uninstall.sh`.
 
-- macOS hoặc Linux
-- Node.js ≥ 18, `python3`
-- Một ứng dụng Feishu/Lark (App ID + App Secret) đã **bật "long-lived refresh_token"**
-
----
-
-## Cái gì tự động, cái gì phải làm tay
-
-Đây là chỗ cần thành thật — kể cả repo dùng MCP cũng **không** làm hộ được mấy bước sau:
-
-| Bước | `install.sh` lo? |
-|---|---|
-| Cài `@larksuite/cli` mới nhất | ✅ |
-| Cài skill + helper + hook auto-refresh | ✅ |
-| Kiểm tra & báo trạng thái | ✅ |
-| Giữ token tươi các phiên sau | ✅ (hook, chạy ngầm) |
-| Tạo App ID/Secret trên open.feishu.cn | ❌ — con người làm |
-| Duyệt OAuth trên trình duyệt lần đầu (`auth login`) | ❌ — con người bấm đồng ý |
-
-Hai bước ❌ chỉ làm **một lần**. Sau đó mọi thứ tự chạy. (Cảm giác "MCP tự làm hết" chẳng qua vì auth đã được cài từ trước — dưới nắp capo nó cũng cần đúng 2 bước này.)
-
-Hai bước đó có thể để Claude Code dẫn giúp: mở Claude Code, gõ *"kết nối giúp tôi lark-cli"* → skill `lark-cli-setup` sẽ dẫn qua đủ 5 bước.
-
-### Lấy App ID / App Secret ở đâu
+### 2. Lấy App ID / App Secret (một lần)
 
 > Tham khảo FAQ chính thức: <https://open.larkoffice.com/document/faq/trouble-shooting/how-to-obtain-app-id>
 
 1. Mở developer console theo phiên bản:
    - Feishu (bản Trung): <https://open.feishu.cn/app>
    - Lark (quốc tế): <https://open.larksuite.com/app>
-2. **Chưa có app thì tạo:** bấm *Create custom app / 创建企业自建应用* → đặt tên, icon → tạo.
+2. Chưa có app thì bấm **Create custom app / 创建企业自建应用** → đặt tên, icon → tạo.
 3. Vào app → menu trái → **Credentials & Basic Info / 凭证与基础信息**.
-4. Ở khối **App Credentials / 应用凭证**: copy **App ID**, rồi bấm hiện/copy **App Secret**.
-5. Cùng trang, mục **Security Settings / 安全设置**: **bật "long-lived refresh_token"** (bắt buộc để token tự tươi lâu dài).
-6. Dán **App ID** + **App Secret** vào Claude Code khi skill hỏi (hoặc khi `lark-cli config init --new` nhắc nhập).
+4. Copy **App ID**, rồi bấm hiện/copy **App Secret**.
+5. Cùng trang, mục **Security Settings**: **bật "long-lived refresh_token"** (bắt buộc để token tự tươi lâu dài).
 
-> ⚠️ App Secret = mật khẩu. Chỉ lưu ở `~/.lark-cli/config.json` trên máy bạn, **đừng** dán lên kênh công khai/log. Có sẵn app của tổ chức thì xin admin App ID/Secret, bỏ qua bước 2.
+> ⚠️ App Secret = mật khẩu. Chỉ lưu ở `~/.lark-cli/config.json` trên máy bạn; **đừng** dán lên kênh công khai/log.
 
----
+### 3. Đăng nhập một lần
 
-## So với cách dùng MCP (repo `lark-mcp-cli`)
+```bash
+lark-cli config init --new         # nhập brand + App ID/Secret
+lark-cli auth login --recommend    # duyệt OAuth (browser hoặc QR — xem phần Sử dụng)
+```
 
-| | Repo này (CLI + Bash) | Repo MCP |
-|---|---|---|
-| Chạy ở đâu | **Claude Code** (có terminal) | Claude Desktop / claude.ai web |
-| Claude gọi Lark qua | Bash chạy `lark-cli` | Giao thức MCP → server shell-out ra `lark-cli` |
-| Phạm vi | **Toàn bộ 200+ lệnh** lark-cli | Chỉ các tool được định nghĩa sẵn |
-| Cập nhật CLI | `npm update` → luôn mới | Đóng băng trong bản build server |
-| Công bảo trì | ~0 | Phải maintain server + tool |
+Không quen terminal? Mở Claude Code và gõ *"kết nối giúp tôi lark-cli"* — skill sẽ dẫn cả 3 bước trên. Xong nhớ **restart Claude Code**.
 
-Chọn repo này nếu bạn sống trong **Claude Code**. Chọn MCP nếu cần điều khiển Lark từ **app Desktop/web** không có terminal.
+## Sử dụng
 
----
+### Trong Claude Code
+Sau khi cài, chỉ cần nói chuyện tự nhiên — Claude Code tự gõ `lark-cli` giùm:
 
-## Token auto-refresh hoạt động thế nào
+> *"Hôm nay tôi có việc gì cần làm?"*
+> *"Tóm tắt các mail chưa đọc trong hộp thư."*
+> *"Tạo một tài liệu tên 'Kế hoạch tuần' và ghi 3 gạch đầu dòng."*
 
-- Hook **SessionStart** chạy `lark-cli-ensure-auth --quiet` mỗi khi mở phiên Claude Code.
-- Ở chế độ `--quiet`: chỉ **refresh im lặng bằng refresh_token** (một API call nhẹ), **không** bật trình duyệt.
-- Nếu refresh_token đã hết hạn (mặc định ~vài ngày) → helper chỉ **cảnh báo** và nhắc `lark-cli auth login --recommend`, không làm phiền.
-- Chạy tay bất cứ lúc nào: `lark-cli-ensure-auth` (không cờ) → nếu cần sẽ mở Device Flow, **đồng thời in mã QR** để bạn quét bằng Lark trên điện thoại (khỏi login desktop).
+### Chạy trực tiếp bằng CLI
 
-### Đăng nhập bằng QR (tiện cho người ở xa / không quen terminal)
+```bash
+lark-cli contact +get-user --as user        # xem thông tin của chính mình
+lark-cli calendar +agenda --as user         # lịch hôm nay
+lark-cli im send --to "<chat_id>" --text "hello" --as bot
+```
+
+> Lưu ý cú pháp: các shortcut dùng tiền tố `+` (vd `contact +get-user`), không phải `contact get-user`.
+
+### Đăng nhập bằng QR (tiện cho người ở xa)
 
 ```bash
 OUT=$(lark-cli auth login --recommend --no-wait --json)
 URL=$(echo "$OUT" | python3 -c "import sys,json;print(json.load(sys.stdin).get('verification_url',''))")
 CODE=$(echo "$OUT" | python3 -c "import sys,json;print(json.load(sys.stdin).get('device_code',''))")
 
-lark-cli auth qrcode "$URL" --ascii            # in QR ra terminal để quét
-# hoặc:  lark-cli auth qrcode "$URL" --output qr.png   # xuất ảnh gửi cho người dùng
+lark-cli auth qrcode "$URL" --ascii          # in QR ra terminal để quét
+# hoặc: lark-cli auth qrcode "$URL" --output qr.png
 
-# người dùng mở App Lark/Feishu trên điện thoại → quét → bấm đồng ý, rồi:
+# mở app Lark/Feishu trên điện thoại → quét → đồng ý, rồi hoàn tất:
 lark-cli auth login --device-code "$CODE" --json
 ```
 
-Trong Claude Code, chỉ cần nói *"đăng nhập lark bằng QR"* — skill sẽ chạy đúng luồng này và hiện QR cho bạn quét.
+Trong Claude Code, chỉ cần nói *"đăng nhập lark bằng QR"*.
 
-> Lưu ý: token của **Lark** (miễn phí, ~2 giờ) hoàn toàn tách biệt với hạn mức **Claude** (gói Pro, cửa sổ 5 giờ). Hook này chỉ lo token Lark.
+### Token & auto-refresh
 
----
+- Hook `SessionStart` chạy `lark-cli-ensure-auth --quiet` mỗi phiên → refresh im lặng bằng refresh_token, không bật browser.
+- Chạy tay bất cứ lúc nào: `lark-cli-ensure-auth` (không cờ) → nếu cần sẽ hiện QR + mở browser để đăng nhập lại.
+- Token **Lark** (miễn phí, ~2 giờ) tách biệt hoàn toàn với hạn mức **Claude** (gói Pro, cửa sổ 5 giờ) — hook này chỉ lo token Lark.
 
-## Bảo mật
+## Đóng góp
 
-- `~/.lark-cli/config.json` chứa secret dạng thô → `install.sh` không đụng tới; hãy `chmod 600` và **đừng commit** thư mục `~/.lark-cli/`.
-- Không in `appSecret` / `accessToken` / `refreshToken` ra log.
-- Hook chỉ chạy đúng một helper cục bộ với đường dẫn tuyệt đối; xem `skills/lark-cli-setup/scripts/lark-cli-ensure-auth`.
-- Với thao tác ghi/xoá, skill yêu cầu xác nhận và ưu tiên `--dry-run`.
+Rất hoan nghênh issue và PR. Repo cố tình giữ nhỏ và dễ đọc để ai cũng fork/tùy biến được.
 
-## Cấu trúc repo
+### Cấu trúc
 
 ```
 lark-cli-onboarding/
-├── install.sh                     # bootstrap 1 lệnh
-├── uninstall.sh
-└── skills/
-    └── lark-cli-setup/
-        ├── SKILL.md               # Claude Code đọc để dẫn cài đặt
-        ├── INSTALL.md
-        └── scripts/
-            └── lark-cli-ensure-auth   # helper auto-refresh (đã sửa cho CLI >=1.0.5x)
+├── install.sh          # bootstrap idempotent (npm + copy skill/helper + merge hook)
+├── uninstall.sh        # gỡ sạch, giữ nguyên credential
+└── skills/lark-cli-setup/
+    ├── SKILL.md        # Claude Code đọc để dẫn cài đặt & đăng nhập
+    ├── INSTALL.md
+    └── scripts/lark-cli-ensure-auth   # helper auto-refresh (đọc .identities.user.tokenStatus)
 ```
+
+### Mẹo phát triển
+- **Đổi/thêm hành vi cài** → sửa `install.sh`; luôn giữ tính idempotent (merge, đừng append mù).
+- **Sửa helper token** → nhớ CLI ≥ 1.0.5x đặt trạng thái ở `.identities.user.tokenStatus` (không còn top-level `.tokenStatus`); `--quiet` phải tuyệt đối không mở browser.
+- **Muốn chạy trên Codex CLI** → Codex cũng hỗ trợ Skills + hook `SessionStart` nhưng ở `~/.codex/` (config TOML), không phải `~/.claude/`. Cần thêm nhánh dò `~/.codex` trong `install.sh` để copy đúng chỗ. PR cho phần này rất được chào đón.
+- Sau khi sửa, kiểm cú pháp: `bash -n install.sh uninstall.sh skills/lark-cli-setup/scripts/lark-cli-ensure-auth`.
+
+### Báo lỗi / gửi PR
+1. Mở [issue](https://github.com/nixthinh-bit/lark-cli-onboarding/issues) mô tả môi trường (OS, `node -v`, `lark-cli --version`) và bước tái hiện.
+2. Fork → nhánh tính năng → commit rõ ràng → mở Pull Request.
+3. **Đừng** commit credential, App Secret, token, hay đường dẫn hạ tầng nội bộ.
+
+## License
+
+[MIT](./LICENSE) © 2026 nixthinh-bit
