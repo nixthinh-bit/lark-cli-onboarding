@@ -1,0 +1,100 @@
+#!/bin/bash
+# lark-cli-ensure-auth (v2) — keep the lark-cli USER token fresh.
+#
+# Usage:
+#   lark-cli-ensure-auth                 # interactive: silent-refresh, else Device Flow (opens browser)
+#   lark-cli-ensure-auth --quiet         # hook/cron mode: silent-refresh only, NEVER opens a browser
+#   lark-cli-ensure-auth --no-browser    # same as above but keeps normal logging
+#
+# Exit codes: 0 = token usable, 1 = needs a manual `lark-cli auth login`
+#
+# Why v2: lark-cli >= 1.0.5x nests token status under .identities.user.tokenStatus
+# (older builds exposed a top-level .tokenStatus). This script reads the new shape
+# and falls back to the old one. In --quiet mode it refreshes via the stored
+# refresh_token (a lightweight user API call) and refuses to pop a browser, so it is
+# safe to wire into a Claude Code SessionStart hook.
+
+set -u
+
+# --- make lark-cli findable regardless of how it was installed -----------------
+for d in \
+  "$HOME/.npm-global/bin" \
+  "$(npm config get prefix 2>/dev/null)/bin" \
+  /opt/homebrew/bin \
+  /usr/local/bin \
+  "$HOME/.local/bin"; do
+  case ":$PATH:" in *":$d:"*) ;; *) [ -d "$d" ] && PATH="$d:$PATH" ;; esac
+done
+export PATH
+
+QUIET=""; NO_BROWSER=""
+for a in "$@"; do
+  case "$a" in
+    --quiet) QUIET=1; NO_BROWSER=1 ;;
+    --no-browser) NO_BROWSER=1 ;;
+  esac
+done
+log() { [ -z "$QUIET" ] && echo "$@"; }
+
+if ! command -v lark-cli >/dev/null 2>&1; then
+  log "❌ lark-cli not found on PATH. Install it: npm install -g @larksuite/cli@latest"
+  exit 1
+fi
+
+# --- read current user token status (new shape, fallback to old) ---------------
+read_status() {
+  lark-cli auth status 2>/dev/null | python3 -c '
+import sys, json
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    print("unknown"); sys.exit(0)
+u = (d.get("identities", {}) or {}).get("user", {}) or {}
+print(u.get("tokenStatus") or d.get("tokenStatus") or "unknown")
+' 2>/dev/null
+}
+
+STATUS="$(read_status)"
+if [ "$STATUS" = "valid" ]; then
+  log "✅ lark-cli: user token valid"
+  exit 0
+fi
+
+log "… lark-cli: user token is '$STATUS' — attempting silent refresh (refresh_token)…"
+
+# A single authenticated user call makes lark-cli refresh via the stored
+# refresh_token. No browser involved. contact +get-user is the lightest such call
+# and is part of the --recommend scope set used during setup.
+lark-cli contact +get-user --as user >/dev/null 2>&1 || true
+
+STATUS="$(read_status)"
+if [ "$STATUS" = "valid" ]; then
+  log "✅ lark-cli: token refreshed silently"
+  exit 0
+fi
+
+# refresh_token itself is expired/invalid → a real login is required.
+if [ -n "$NO_BROWSER" ]; then
+  log "⚠️  lark-cli: refresh_token expired — run: lark-cli auth login --recommend"
+  exit 1
+fi
+
+# --- interactive Device Flow (opens browser) -----------------------------------
+log "⚠️  Need a fresh authorization. Starting Device Flow…"
+OUT=$(lark-cli auth login --recommend --no-wait --json 2>&1)
+CODE=$(echo "$OUT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('device_code',d.get('deviceCode','')))" 2>/dev/null)
+URL=$(echo "$OUT"  | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('verification_url',d.get('verificationUrl','')))" 2>/dev/null)
+if [ -z "$URL" ] || [ -z "$CODE" ]; then
+  log "❌ Could not start Device Flow. Run manually: lark-cli auth login --recommend"
+  exit 1
+fi
+log "   Authorization URL: $URL"
+command -v open >/dev/null 2>&1 && open "$URL" 2>/dev/null || \
+  command -v xdg-open >/dev/null 2>&1 && xdg-open "$URL" 2>/dev/null || true
+for _ in $(seq 1 30); do
+  sleep 3
+  R=$(lark-cli auth login --device-code "$CODE" --json 2>&1)
+  echo "$R" | grep -q '"ok": *true\|success\|登录成功' && { log "✅ authorized"; exit 0; }
+done
+log "❌ auth timed out. Run manually: lark-cli auth login --recommend"
+exit 1
