@@ -58,8 +58,8 @@ curl -fsSL https://raw.githubusercontent.com/nixthinh-bit/lark-cli-onboarding/ma
 1. Mở developer console theo phiên bản:
    - Feishu (bản Trung): <https://open.feishu.cn/app>
    - Lark (quốc tế): <https://open.larksuite.com/app>
-2. Chưa có app thì bấm **Create custom app / 创建企业自建应用** → đặt tên, icon → tạo.
-3. Vào app → menu trái → **Credentials & Basic Info / 凭证与基础信息**.
+2. Chưa có app thì bấm **Create custom app** → đặt tên, icon → tạo.
+3. Vào app → menu trái → **Credentials & Basic Info**.
 4. Copy **App ID**, rồi bấm hiện/copy **App Secret**.
 5. Cùng trang, mục **Security Settings**: **bật "long-lived refresh_token"** (bắt buộc để token tự tươi lâu dài).
 
