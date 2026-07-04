@@ -1,236 +1,233 @@
 ---
 name: lark-cli-setup
 version: 1.0.0
-description: "飞书/Lark CLI 首次连接与 Token 持久化。从零引导：安装 @larksuite/cli、初始化飞书应用（appId/appSecret）、OAuth 授权登录（user 身份）或应用身份（bot）、部署 Device Flow Token 自动刷新脚本。当用户要第一次接入 lark-cli、给新同事做 onboarding、排查 token 过期、想搭建长期自动刷新、配置 refresh_token 时触发。"
+description: "First-time Lark/Feishu CLI connection and token persistence. Guides from zero: install @larksuite/cli, initialize the Feishu/Lark app (appId/appSecret), OAuth login (user identity) or app identity (bot), and deploy a Device Flow token auto-refresh script. Trigger when the user wants to connect lark-cli for the first time, onboard a new teammate, troubleshoot an expired token, set up long-lived auto-refresh, or configure refresh_token."
 ---
 
-# lark-cli 连接与 Token 持久化
+# lark-cli connection & token persistence
 
-本技能覆盖 **lark-cli 从零到自动刷新** 的完整流程。分五步：安装 → 应用凭据 → 认证 → Token 持久化脚本 → 验证。
+This skill covers the full **lark-cli from zero to auto-refresh** flow in five steps: install → app credentials → auth → token-persistence script → verify.
 
-> **范围限定**：本技能只讲 CLI。MCP 接入方式不在范围内。
+> **Scope**: this skill is CLI-only. MCP integration is out of scope.
 
 ---
 
-## Step 1: 安装 lark-cli
+## Step 1: Install lark-cli
 
-先确认 Node.js ≥ 18：`node --version`。若无，需先安装 Node.js。
+First confirm Node.js ≥ 18: `node --version`. If missing, install Node.js first.
 
 ```bash
-# 公网 registry
+# public registry
 npm install -g @larksuite/cli
 
-# 若所在组织有私有 npm registry，可自行指定 --registry <your-registry-url>
+# if your organization has a private npm registry, add --registry <your-registry-url>
 ```
 
-验证：
+Verify:
 ```bash
-lark-cli --version   # 预期: lark-cli version 1.x.x
+lark-cli --version   # expected: lark-cli version 1.x.x
 ```
 
 ---
 
-## Step 2: 准备飞书应用凭据
+## Step 2: Prepare the Feishu/Lark app credentials
 
-需要拿到 `appId` 和 `appSecret`。**作为 AI agent，请把下面的取值步骤直接讲给用户，等他们把 App ID / App Secret 粘回来再继续。**
+You need an `appId` and `appSecret`. **As an AI agent, relay the steps below to the user and wait for them to paste back the App ID / App Secret before continuing.**
 
-**取 App ID / App Secret 的步骤**（参考官方 FAQ：https://open.larkoffice.com/document/faq/trouble-shooting/how-to-obtain-app-id）：
+**How to get App ID / App Secret** (official FAQ: https://open.larkoffice.com/document/faq/trouble-shooting/how-to-obtain-app-id):
 
-1. 打开开发者后台，按版本选择：
-   - 飞书（中国版）：https://open.feishu.cn/app
-   - Lark（国际版）：https://open.larksuite.com/app
-2. **没有应用就先建**：点「创建企业自建应用 / Create custom app」，填名称、图标 → 创建。
-3. 进入该应用 → 左侧栏点「**凭证与基础信息 / Credentials & Basic Info**」。
-4. 在「**应用凭证 / App Credentials**」区块：复制 **App ID**，再点 App Secret 旁的显示/复制拿到 **App Secret**。
-5. 同页「**安全设置 / Security Settings**」里，**开启"长期 refresh_token"**（否则无法长期自动刷新）。
-6. 把 **App ID** 和 **App Secret** 粘进对话；agent 在 Step 3 `config init` 时代入，或引导用户在交互提示里输入。
+1. Open the developer console for your edition:
+   - Feishu (China): https://open.feishu.cn/app
+   - Lark (international): https://open.larksuite.com/app
+2. **No app yet? Create one:** click **Create custom app**, set a name and icon → create.
+3. Open the app → left sidebar → **Credentials & Basic Info**.
+4. In **App Credentials**: copy the **App ID**, then reveal/copy the **App Secret**.
+5. On the same page under **Security Settings**, **enable "long-lived refresh_token"** (otherwise durable auto-refresh is impossible).
+6. Paste the **App ID** and **App Secret** into the chat; the agent supplies them during Step 3 `config init`, or guides the user to type them at the interactive prompt.
 
-> ⚠️ App Secret 等同密码：只在本机 `~/.lark-cli/config.json` 保存，**不要**贴进公开渠道、日志或 memory。
-> 已有团队应用时，可直接向管理员索取 App ID/Secret，跳过第 2 步。
+> ⚠️ The App Secret is a password: keep it only in `~/.lark-cli/config.json` on the local machine. **Do not** paste it into public channels, logs, or memory.
+> If a team app already exists, ask the admin for the App ID/Secret and skip step 2.
 
 ---
 
-## Step 3: 初始化配置
+## Step 3: Initialize configuration
 
-运行：
+Run:
 ```bash
 lark-cli config init --new
 ```
 
-**⚠️ 阻塞命令**：该命令会阻塞直到用户完成浏览器授权或过期。作为 AI agent 代为执行时，必须 **以 background 方式启动**，然后从 stdout 提取授权链接发给用户。
+**⚠️ Blocking command**: this blocks until the user completes browser authorization or it expires. When running it on the user's behalf as an AI agent, start it **in the background**, then extract the authorization link from stdout and send it to the user.
 
-交互式提示会要求输入：
-- `brand`: `feishu`（中国版）或 `lark`（国际版）
+The interactive prompt asks for:
+- `brand`: `feishu` (China) or `lark` (international)
 - `appId` / `appSecret`
-- `lang`: 默认 `zh`
+- `lang`: defaults to `zh` (use `en` if preferred)
 
-配置文件存于 `~/.lark-cli/config.json`。**立即设置文件权限**：
+The config is stored at `~/.lark-cli/config.json`. **Set file permissions immediately:**
 ```bash
 chmod 600 ~/.lark-cli/config.json
 ```
 
 ---
 
-## Step 4: 认证登录
+## Step 4: Authenticate
 
-### 身份模型
+### Identity model
 
-两种身份，通过 `--as` 切换：
+Two identities, switched via `--as`:
 
-| 身份 | 获取方式 | 适用 |
-|------|---------|------|
-| `--as user` | 走 `auth login`，需浏览器授权 | 访问用户自己的日历、云空间、IM、邮箱 |
-| `--as bot` | 无需 login，仅 appId + appSecret | 应用级操作，访问 bot 自己的资源 |
+| Identity | How to obtain | Use for |
+|----------|---------------|---------|
+| `--as user` | via `auth login`, requires browser approval | the user's own calendar, drive, IM, mailbox |
+| `--as bot` | no login needed, just appId + appSecret | app-level operations, the bot's own resources |
 
-**关键差异**：
-- Bot 看不到用户资源（查日程返回 bot 自己的空日历）
-- Bot 无法代表用户操作（发消息以应用名义，创建文档归属 bot）
-- User scope 需后台开通 + 用户 `auth login` 双重满足
-- **禁止对 bot 执行 `auth login`**
+**Key differences:**
+- A bot cannot see user resources (querying the agenda returns the bot's own empty calendar).
+- A bot cannot act on behalf of the user (messages are sent as the app; docs it creates belong to the bot).
+- A user scope needs both console approval **and** the user's `auth login`.
+- **Never run `auth login` for a bot.**
 
-### User 授权（三选一）
+### User authorization (pick one)
 
-推荐 scope（一次授权常用集合）：
+Recommended scopes (a common set, one approval):
 ```bash
 lark-cli auth login --recommend
 ```
 
-具体 scope（最小权限）：
+Specific scopes (least privilege):
 ```bash
 lark-cli auth login --scope "calendar:calendar:readonly docx:document:readonly"
 ```
 
-整个业务域：
+A whole business domain:
 ```bash
 lark-cli auth login --domain calendar
 ```
 
-**AI agent 代为操作**：同样 background 方式启动，从输出抓授权 URL 发给用户。多次 login 的 scope 会累积（增量授权）。
+**When acting as an AI agent**: start it in the background too, grab the authorization URL from the output, and send it to the user. Scopes from multiple logins accumulate (incremental authorization).
 
-### 用二维码授权（推荐给非终端用户 / 远程用户）
+### QR-code authorization (recommended for non-terminal / remote users)
 
-不想让用户在桌面浏览器登录时，用 Device Flow + 二维码，让他们**用手机上的 Lark/飞书 App 扫码授权**：
+When you don't want the user logging in via a desktop browser, use Device Flow + a QR code so they **scan and approve with the Lark/Feishu app on their phone**:
 
 ```bash
-# 1) 发起 Device Flow，拿 device_code + verification_url（不阻塞）
+# 1) Start Device Flow, get device_code + verification_url (non-blocking)
 OUT=$(lark-cli auth login --recommend --no-wait --json)
 URL=$(echo "$OUT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('verification_url',d.get('verificationUrl','')))")
 CODE=$(echo "$OUT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('device_code',d.get('deviceCode','')))")
 
-# 2) 生成二维码：ASCII 直接打印，或 PNG 存文件发给用户
-lark-cli auth qrcode "$URL" --ascii              # 终端里显示，直接扫
-lark-cli auth qrcode "$URL" --output qr.png      # 或存成图片发给远程用户
+# 2) Generate the QR: ASCII to stdout, or PNG to a file to send to the user
+lark-cli auth qrcode "$URL" --ascii              # shows in the terminal, scan directly
+lark-cli auth qrcode "$URL" --output qr.png      # or save as an image for a remote user
 
-# 3) 用户用手机 Lark App 扫码 → 点同意后，轮询完成授权
+# 3) User scans with the phone Lark app → approves, then poll to complete
 lark-cli auth login --device-code "$CODE" --json
 ```
 
-**AI agent**：把 ASCII 二维码（或 PNG）作为最后一条消息发给用户，结束回合；等用户确认扫码后，再用 `--device-code` 完成。`lark-cli-ensure-auth`（交互模式）已内置：过期时会同时打印二维码 + 打开浏览器。
+**AI agent**: send the ASCII QR (or PNG) as your final turn message and end the turn; after the user confirms they scanned it, complete with `--device-code`. `lark-cli-ensure-auth` (interactive mode) already does this: on expiry it prints the QR and opens the browser.
 
-### 查看状态
+### Check status
 
 ```bash
 lark-cli auth status
 ```
 
-返回 JSON，用户 token 状态在 **`.identities.user.tokenStatus`**（`valid` / `needs_refresh` / `expired`）。
-> ⚠️ CLI >= 1.0.5x 起该字段是**嵌套**在 `.identities.user` 下，不再是顶层 `.tokenStatus`。
+Returns JSON; the user token status is at **`.identities.user.tokenStatus`** (`valid` / `needs_refresh` / `expired`).
+> ⚠️ Since CLI >= 1.0.5x this field is **nested** under `.identities.user`, no longer a top-level `.tokenStatus`.
 
 ---
 
-## Step 5: 部署 Token 自动刷新脚本
+## Step 5: Deploy the token auto-refresh script
 
-User token 有效期约 2 小时。定时任务/后台 agent 场景需自动刷新。本 skill 附带 `lark-cli-ensure-auth`，基于 Device Flow 实现无人值守刷新。
+A user token lasts ~2 hours. Cron jobs / background agents need automatic refresh. This skill ships `lark-cli-ensure-auth` for unattended refresh.
 
-### 安装
+### Install
 
 ```bash
-# 1. 创建目录（如不存在）
+# 1. create the directory if missing
 mkdir -p ~/.local/bin
 
-# 2. 从 skill 拷贝脚本（路径按 skill 安装位置替换）
+# 2. copy the script from the skill (adjust the path to your skill location)
 cp ~/.claude/skills/lark-cli-setup/scripts/lark-cli-ensure-auth ~/.local/bin/
 chmod +x ~/.local/bin/lark-cli-ensure-auth
 
-# 3. 确保 PATH 包含 ~/.local/bin
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc  # bash 用户改 ~/.bashrc
+# 3. make sure PATH includes ~/.local/bin
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc  # bash users: ~/.bashrc
 source ~/.zshrc
 ```
 
-### 使用
+### Usage
 
 ```bash
-# 每次飞书操作前调用，保证 token 可用
-lark-cli-ensure-auth           # 详细输出
-lark-cli-ensure-auth --quiet   # 静默模式，仅失败时报
-
-# 也可作为 cron / 定时任务的 pre-hook
+# call before Lark operations to ensure the token is usable
+lark-cli-ensure-auth           # verbose
+lark-cli-ensure-auth --quiet   # silent; also never opens a browser (safe for hooks/cron)
 ```
 
-### 脚本逻辑
+### Script logic
 
-1. 调用 `lark-cli auth status` 检查 token
-2. `valid` → 立即退出 0
-3. 过期 → `lark-cli auth login --recommend --no-wait --json` 拿 `deviceCode` + `verificationUrl`
-4. `open "$VERIFY_URL"` 自动打开浏览器
-5. 每 3 秒轮询 `lark-cli auth login --device-code ... --json`，最多 90 秒
-6. 成功 0 / 超时 1
+1. Read `lark-cli auth status` and parse `.identities.user.tokenStatus`.
+2. `valid` → exit 0 immediately.
+3. Otherwise attempt a silent refresh via a light user API call (uses the stored refresh_token, no browser).
+4. Still not valid + `--quiet`/`--no-browser` → warn and exit 1 (do not open a browser).
+5. Interactive → Device Flow: print a QR, open the browser, poll `--device-code` for up to 90s.
 
-前提：应用已开启 refresh_token（见 Step 2）。
+Prerequisite: the app has refresh_token enabled (see Step 2).
 
 ---
 
-## 验证连接
+## Verify the connection
 
 ```bash
-# User 身份：读自己的信息
-lark-cli contact get-user --as user
+# User identity: read your own info
+lark-cli contact +get-user --as user
 
-# User 身份：列日历
+# User identity: list the agenda
 lark-cli calendar +agenda --as user
 
-# Bot 身份：发消息
+# Bot identity: send a message
 lark-cli im send --to "<chat_id>" --text "hello" --as bot
 ```
 
-每条命令输出开头会打印 `[identity: bot/user]`，用以确认当前身份。
+> Note: shortcuts use a `+` prefix (e.g. `contact +get-user`). Each command prints `[identity: bot/user]` at the start of its output so you can confirm the active identity.
 
 ---
 
-## 权限不足排查
+## Troubleshooting insufficient permissions
 
-错误响应会带关键字段：
+Error responses include useful fields:
 
-| 字段 | 含义 |
-|------|------|
-| `permission_violations` | 缺失的 scope 列表（N 选 1 即可满足） |
-| `console_url` | 飞书开放平台对应应用的权限配置页 |
-| `hint` | 建议的修复命令 |
+| Field | Meaning |
+|-------|---------|
+| `permission_violations` | list of missing scopes (satisfying any one of N is enough) |
+| `console_url` | the app's scope-configuration page on the open platform |
+| `hint` | a suggested fix command |
 
-**Bot 身份报错**：把 `console_url` 发给用户，引导在开放平台开通 scope。不要跑 `auth login`。
+**Bot identity error**: send the `console_url` to the user and guide them to enable the scope on the open platform. Do not run `auth login`.
 
-**User 身份报错**：
+**User identity error**:
 ```bash
 lark-cli auth login --scope "<missing_scope>"
 ```
 
 ---
 
-## 安全规则
+## Security rules
 
-- **禁止**在终端、日志、memory 中明文输出 `appSecret` / `accessToken` / `refreshToken`
-- **写入/删除**操作前必须二次确认用户意图
-- 危险请求先用 `--dry-run` 预览
-- `~/.lark-cli/config.json` 含明文 secret → 务必 `chmod 600`
-- 不要把 `~/.lark-cli/` 提交到 Git
+- **Never** print `appSecret` / `accessToken` / `refreshToken` in plaintext to the terminal, logs, or memory.
+- **Confirm intent** before any write/delete operation.
+- Preview risky requests with `--dry-run` first.
+- `~/.lark-cli/config.json` holds a plaintext secret → always `chmod 600`.
+- Never commit `~/.lark-cli/` to Git.
 
 ---
 
-## 完成度自检
+## Completion self-check
 
-安装成功的三个信号：
-1. `lark-cli --version` 有输出
-2. `lark-cli auth status` 返回 `tokenStatus: valid`
-3. `lark-cli-ensure-auth` 在 token 有效时秒退，过期时能无人值守刷新
+Three signals of a successful setup:
+1. `lark-cli --version` produces output.
+2. `lark-cli auth status` shows `.identities.user.tokenStatus: valid`.
+3. `lark-cli-ensure-auth` exits instantly when the token is valid, and refreshes unattended when it needs it.
 
-三点都通过，CLI 连接就 ready 了。
+All three passing means the CLI connection is ready.
