@@ -1,57 +1,59 @@
-# lark-cli-setup Skill — 安装指南
+# lark-cli-setup Skill — install guide
 
-这是一个 Claude Code skill，帮你从零把飞书 CLI（`@larksuite/cli`）配好并实现 Token 长期自动刷新。
+A Claude Code skill that sets up the Lark/Feishu CLI (`@larksuite/cli`) from zero and enables long-lived token auto-refresh.
 
-## 安装（macOS / Linux）
+> In this repo, `./install.sh` does everything below for you. These manual steps are only if you want to install the skill by hand.
+
+## Install (macOS / Linux)
 
 ```bash
-# 1. 拷贝 skill 到 Claude Code 用户级 skills 目录
+# 1. copy the skill into Claude Code's user-level skills directory
 mkdir -p ~/.claude/skills
-cp -r lark-cli-skill ~/.claude/skills/lark-cli-setup
+cp -r skills/lark-cli-setup ~/.claude/skills/lark-cli-setup
 
-# 2. 确保脚本可执行
+# 2. make the script executable
 chmod +x ~/.claude/skills/lark-cli-setup/scripts/lark-cli-ensure-auth
 
-# 3. 重启 Claude Code（或在新 session 中）让 skill 被加载
+# 3. restart Claude Code (or start a new session) so the skill loads
 ```
 
-## 怎么用
+## How to use
 
-装好之后，直接跟 Claude 说类似的话：
+Once installed, just tell Claude something like:
 
-- "帮我连接飞书 CLI"
-- "我 token 又过期了，帮我搭一个自动刷新"
-- "onboarding 一下飞书 CLI"
+- "help me connect the Lark CLI"
+- "my token expired again, set up auto-refresh for me"
+- "onboard me onto lark-cli"
 
-Claude 会识别触发条件，按 skill 里的步骤把你带完 5 步：
+Claude recognizes the trigger and walks you through the 5 steps in the skill:
 
-1. 安装 `@larksuite/cli`
-2. 准备飞书应用凭据（appId / appSecret）
-3. `lark-cli config init --new` 配置
-4. `lark-cli auth login --recommend` 授权
-5. 部署 `lark-cli-ensure-auth` 自动刷新脚本
+1. Install `@larksuite/cli`
+2. Prepare the Feishu/Lark app credentials (appId / appSecret)
+3. `lark-cli config init --new`
+4. `lark-cli auth login --recommend`
+5. Deploy the `lark-cli-ensure-auth` auto-refresh script
 
-## 目录结构
+## Directory structure
 
 ```
 lark-cli-setup/
-├── SKILL.md                        # skill 主文件（Claude 读取）
-├── INSTALL.md                      # 本文件（人类读取）
+├── SKILL.md                        # main skill file (read by Claude)
+├── INSTALL.md                      # this file (read by humans)
 └── scripts/
-    └── lark-cli-ensure-auth        # Token 自动刷新脚本（Device Flow）
+    └── lark-cli-ensure-auth        # token auto-refresh script (Device Flow)
 ```
 
-## 前置条件
+## Prerequisites
 
-- macOS 或 Linux
+- macOS or Linux
 - Node.js ≥ 18
-- 飞书应用凭据（App ID + App Secret）
-  - 已有团队应用：向管理员索取，或复用团队已建好的自建应用
-  - 新建应用：https://open.feishu.cn 创建自建应用
-- 应用后台**开启"长期 refresh_token"**（否则无法实现长期自动刷新）
+- Feishu/Lark app credentials (App ID + App Secret)
+  - Existing team app: ask an admin, or reuse a custom app the team already built
+  - New app: create a custom app at https://open.feishu.cn (or https://open.larksuite.com)
+- The app must have **"long-lived refresh_token" enabled** (otherwise durable auto-refresh is impossible)
 
-## 遇到问题
+## Troubleshooting
 
-- Token 总过期 → 确认应用开启了 refresh_token
-- `permission denied` → 按 SKILL.md 里"权限不足排查"章节处理
-- `lark-cli` 找不到 → 检查 `which lark-cli`，必要时把 `/opt/homebrew/bin` 或 `npm config get prefix` 对应的 bin 目录加入 PATH
+- Token keeps expiring → confirm the app has refresh_token enabled
+- `permission denied` → follow the "Troubleshooting insufficient permissions" section in SKILL.md
+- `lark-cli` not found → check `which lark-cli`; if needed, add the relevant bin directory (`~/.npm-global/bin`, `$(npm config get prefix)/bin`, `/opt/homebrew/bin`, or `~/.local/bin`) to PATH

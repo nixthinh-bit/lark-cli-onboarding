@@ -100,7 +100,7 @@ command -v open >/dev/null 2>&1 && open "$URL" 2>/dev/null || \
 for _ in $(seq 1 30); do
   sleep 3
   R=$(lark-cli auth login --device-code "$CODE" --json 2>&1)
-  echo "$R" | grep -q '"ok": *true\|success\|登录成功' && { log "✅ authorized"; exit 0; }
+  echo "$R" | grep -q '"ok": *true\|success' && { log "✅ authorized"; exit 0; }
 done
 log "❌ auth timed out. Run manually: lark-cli auth login --recommend"
 exit 1
