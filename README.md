@@ -1,5 +1,7 @@
 # lark-cli-onboarding
 
+**Tiếng Việt** | [English](./README.en.md)
+
 > **Gửi một link — người nhận chạy một lệnh — Claude Code điều khiển được Lark/Feishu.**
 
 ![status](https://img.shields.io/badge/status-active-brightgreen)
