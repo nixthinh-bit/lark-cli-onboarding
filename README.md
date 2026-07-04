@@ -54,6 +54,21 @@ Hai bước ❌ chỉ làm **một lần**. Sau đó mọi thứ tự chạy. (C
 
 Hai bước đó có thể để Claude Code dẫn giúp: mở Claude Code, gõ *"kết nối giúp tôi lark-cli"* → skill `lark-cli-setup` sẽ dẫn qua đủ 5 bước.
 
+### Lấy App ID / App Secret ở đâu
+
+> Tham khảo FAQ chính thức: <https://open.larkoffice.com/document/faq/trouble-shooting/how-to-obtain-app-id>
+
+1. Mở developer console theo phiên bản:
+   - Feishu (bản Trung): <https://open.feishu.cn/app>
+   - Lark (quốc tế): <https://open.larksuite.com/app>
+2. **Chưa có app thì tạo:** bấm *Create custom app / 创建企业自建应用* → đặt tên, icon → tạo.
+3. Vào app → menu trái → **Credentials & Basic Info / 凭证与基础信息**.
+4. Ở khối **App Credentials / 应用凭证**: copy **App ID**, rồi bấm hiện/copy **App Secret**.
+5. Cùng trang, mục **Security Settings / 安全设置**: **bật "long-lived refresh_token"** (bắt buộc để token tự tươi lâu dài).
+6. Dán **App ID** + **App Secret** vào Claude Code khi skill hỏi (hoặc khi `lark-cli config init --new` nhắc nhập).
+
+> ⚠️ App Secret = mật khẩu. Chỉ lưu ở `~/.lark-cli/config.json` trên máy bạn, **đừng** dán lên kênh công khai/log. Có sẵn app của tổ chức thì xin admin App ID/Secret, bỏ qua bước 2.
+
 ---
 
 ## So với cách dùng MCP (repo `lark-mcp-cli`)
