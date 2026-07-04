@@ -107,13 +107,34 @@ lark-cli auth login --domain calendar
 
 **AI agent 代为操作**：同样 background 方式启动，从输出抓授权 URL 发给用户。多次 login 的 scope 会累积（增量授权）。
 
+### 用二维码授权（推荐给非终端用户 / 远程用户）
+
+不想让用户在桌面浏览器登录时，用 Device Flow + 二维码，让他们**用手机上的 Lark/飞书 App 扫码授权**：
+
+```bash
+# 1) 发起 Device Flow，拿 device_code + verification_url（不阻塞）
+OUT=$(lark-cli auth login --recommend --no-wait --json)
+URL=$(echo "$OUT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('verification_url',d.get('verificationUrl','')))")
+CODE=$(echo "$OUT" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('device_code',d.get('deviceCode','')))")
+
+# 2) 生成二维码：ASCII 直接打印，或 PNG 存文件发给用户
+lark-cli auth qrcode "$URL" --ascii              # 终端里显示，直接扫
+lark-cli auth qrcode "$URL" --output qr.png      # 或存成图片发给远程用户
+
+# 3) 用户用手机 Lark App 扫码 → 点同意后，轮询完成授权
+lark-cli auth login --device-code "$CODE" --json
+```
+
+**AI agent**：把 ASCII 二维码（或 PNG）作为最后一条消息发给用户，结束回合；等用户确认扫码后，再用 `--device-code` 完成。`lark-cli-ensure-auth`（交互模式）已内置：过期时会同时打印二维码 + 打开浏览器。
+
 ### 查看状态
 
 ```bash
 lark-cli auth status
 ```
 
-返回 JSON，关注 `tokenStatus`（`valid` / `expired` / `invalid`）和 `expiresAt`。
+返回 JSON，用户 token 状态在 **`.identities.user.tokenStatus`**（`valid` / `needs_refresh` / `expired`）。
+> ⚠️ CLI >= 1.0.5x 起该字段是**嵌套**在 `.identities.user` 下，不再是顶层 `.tokenStatus`。
 
 ---
 

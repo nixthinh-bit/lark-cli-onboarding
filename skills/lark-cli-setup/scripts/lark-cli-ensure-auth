@@ -89,6 +89,12 @@ if [ -z "$URL" ] || [ -z "$CODE" ]; then
   exit 1
 fi
 log "   Authorization URL: $URL"
+# Show a scannable QR so you can approve with the Lark app on your phone
+# (no desktop browser login needed). Falls back silently if qrcode unsupported.
+if [ -z "$QUIET" ]; then
+  echo "   Or scan this QR with the Lark/Feishu app on your phone:"
+  lark-cli auth qrcode "$URL" --ascii 2>/dev/null || true
+fi
 command -v open >/dev/null 2>&1 && open "$URL" 2>/dev/null || \
   command -v xdg-open >/dev/null 2>&1 && xdg-open "$URL" 2>/dev/null || true
 for _ in $(seq 1 30); do
