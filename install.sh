@@ -33,6 +33,7 @@ SKILL_SRC="$SRC_DIR/skills/lark-cli-setup"
 SKILL_DST="$HOME/.claude/skills/lark-cli-setup"
 BIN_DST="$HOME/.local/bin"
 ENSURE="$BIN_DST/lark-cli-ensure-auth"
+UPDATER="$BIN_DST/lark-cli-check-update"
 SETTINGS="$HOME/.claude/settings.json"
 
 say()  { printf '\033[1;36m▶\033[0m %s\n' "$*"; }
@@ -66,6 +67,12 @@ cp "$SKILL_SRC/scripts/lark-cli-ensure-auth" "$ENSURE"
 chmod +x "$ENSURE"
 ok "Helper → $ENSURE"
 
+# --- 3b. install the 30-day update-check helper --------------------------------
+say "Installing the update-check helper (runs ~once every 30 days) …"
+cp "$SKILL_SRC/scripts/lark-cli-check-update" "$UPDATER"
+chmod +x "$UPDATER"
+ok "Helper → $UPDATER"
+
 # make sure ~/.local/bin is on PATH for future shells
 case ":$PATH:" in
   *":$BIN_DST:"*) : ;;
@@ -77,31 +84,36 @@ case ":$PATH:" in
     fi ;;
 esac
 
-# --- 4. wire the SessionStart hook (idempotent, uses absolute path) -------------
-say "Wiring the Claude Code SessionStart auto-refresh hook …"
+# --- 4. wire the SessionStart hooks (idempotent, uses absolute paths) -----------
+say "Wiring the Claude Code SessionStart hooks (token refresh + 30-day update check) …"
 mkdir -p "$(dirname "$SETTINGS")"
 [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
-ENSURE="$ENSURE" python3 - "$SETTINGS" <<'PY'
+ENSURE="$ENSURE" UPDATER="$UPDATER" python3 - "$SETTINGS" <<'PY'
 import json, os, sys
 path = sys.argv[1]
-ensure = os.environ["ENSURE"]
-cmd = f'"{ensure}" --quiet'
+# (marker-substring, command) pairs — each added once if not already present
+wanted = [
+    ("lark-cli-ensure-auth",  f'"{os.environ["ENSURE"]}" --quiet'),
+    ("lark-cli-check-update", f'"{os.environ["UPDATER"]}" --quiet'),
+]
 with open(path) as f:
     try: data = json.load(f)
     except Exception: data = {}
 hooks = data.setdefault("hooks", {})
 ss = hooks.setdefault("SessionStart", [])
-# already present? (match on our command)
-present = any(
-    h.get("type") == "command" and "lark-cli-ensure-auth" in h.get("command", "")
-    for grp in ss for h in grp.get("hooks", [])
-)
-if not present:
-    ss.append({"hooks": [{"type": "command", "command": cmd}]})
+added = []
+for marker, cmd in wanted:
+    present = any(
+        h.get("type") == "command" and marker in h.get("command", "")
+        for grp in ss for h in grp.get("hooks", [])
+    )
+    if not present:
+        ss.append({"hooks": [{"type": "command", "command": cmd}]})
+        added.append(marker)
 with open(path, "w") as f:
     json.dump(data, f, indent=2, ensure_ascii=False)
     f.write("\n")
-print("hook added" if not present else "hook already present")
+print("hooks added: " + ", ".join(added) if added else "hooks already present")
 PY
 ok "SessionStart hook ready (runs '$ENSURE --quiet' — silent, never opens a browser)."
 
