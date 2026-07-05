@@ -2,145 +2,115 @@
 
 [Tiếng Việt](./README.md) | **English**
 
-> **Share one link — the recipient runs one command — Claude Code can drive Lark/Feishu.**
+> **Paste one sentence into Claude Code → follow the prompts → control Lark/Feishu by talking.**
 
 ![status](https://img.shields.io/badge/status-active-brightgreen)
 ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue)
 ![license](https://img.shields.io/badge/license-MIT-yellow)
 
-## Overview
+This kit lets [Claude Code](https://claude.com/claude-code) drive your **Lark/Feishu** workspace — read mail, summarize meetings, manage tasks, send messages, create docs, work with Base — in natural language, right in your terminal. It bundles the setup + login + **automatic token refresh** so you never have to log in again every 2 hours.
 
-`lark-cli-onboarding` is a **one-command** installer that lets [Claude Code](https://claude.com/claude-code) operate your **Lark/Feishu** workspace — read mail, summarize meetings, manage tasks, send messages, create docs, work with Base — in plain language, right in your terminal.
+---
 
-**The problem it solves:** the official [`@larksuite/cli`](https://github.com/larksuite/cli) is powerful (200+ commands), but getting a newcomer productive means installing it correctly, creating an app for credentials, doing the OAuth login, and dealing with a user token that expires every ~2 hours. `lark-cli-onboarding` packages that whole setup — **clone → `./install.sh` → done** — plus a **token auto-refresh** mechanism so you don't keep logging back in.
+## ✅ Prepare first (5 minutes)
 
-Unlike the MCP approach, this repo lets Claude Code **run `lark-cli` directly via Bash** (no MCP server needed), so you always get the CLI's **full** command surface and the latest CLI version.
+Get these 4 things ready and installing is just pasting one sentence and following along:
 
-## Features
+| # | You need | Notes |
+|---|----------|-------|
+| 1 | **Claude Pro (or higher) + Claude Code installed** | Claude Code is a terminal CLI — [install it here](https://claude.com/claude-code). Sign in with your Claude Pro account. |
+| 2 | **Node.js ≥ 18** (with `npm`) | Check: `node -v`. Missing? Grab the **LTS** build at [nodejs.org](https://nodejs.org). macOS/Linux; Windows via WSL. |
+| 3 | **A Feishu/Lark app approved by your admin** | You (or an admin) create an app in the console, copy its **App ID + App Secret**, and **enable "long-lived refresh_token"**. Not an admin? Ask your admin to create/approve it and grant scopes. Claude walks you through it. |
+| 4 | **Your phone already signed into the Lark/Feishu app** | So you can **scan a QR code** to approve login in ~10 seconds instead of wrestling with a desktop browser. |
 
-- 🚀 **One-command install** — `install.sh` handles everything: CLI, skill, helper, hook.
-- 🔄 **Token auto-refresh** — a Claude Code `SessionStart` hook silently refreshes the token each session and **never opens a browser on its own**.
-- 📱 **QR-code login** — scan with the Lark/Feishu app on your phone; no desktop login required.
-- 🧠 **Guided skill** — type *"help me connect lark-cli"* in Claude Code and the `lark-cli-setup` skill walks you through it.
-- 🆕 **Always up to date** — installs `@larksuite/cli@latest` from npm; updating is just `npm update`.
-- 🔐 **Safe by default** — credentials stay local (`chmod 600`), writes prefer `--dry-run`, the repo ships no secrets.
-- ♻️ **Idempotent** — re-running `install.sh` never duplicates hooks or config.
+> ⚠️ The App Secret is a password. Keep it on your machine only — never paste it into public chats or logs.
 
-## Installation
+---
 
-### Requirements
-- macOS or Linux (use WSL on Windows)
-- [Node.js](https://nodejs.org) ≥ 18, `npm`, `python3`
-- A Feishu/Lark app (App ID + App Secret) — see [step 2](#2-get-your-app-id--app-secret-one-time)
+## 🚀 Install — just one sentence
 
-### 1. Run the installer
+Open **Claude Code** and paste this, then hit Enter:
 
-```bash
-git clone https://github.com/nixthinh-bit/lark-cli-onboarding.git
-cd lark-cli-onboarding
-./install.sh
+```
+Clone https://github.com/nixthinh-bit/lark-cli-onboarding for me, then connect lark-cli by following its instructions.
 ```
 
-Or as a one-liner:
+Claude Code will: clone the repo → run `install.sh` (installs the CLI + skill + auto-refresh) → then **guide you step by step**: enter your App ID/Secret, show a **QR code to scan with your phone**, and verify the connection. You just **follow** its prompts.
+
+When it's done, **restart Claude Code** once to load the new skill + hooks.
+
+<details>
+<summary>Manual way (if you prefer running commands yourself)</summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nixthinh-bit/lark-cli-onboarding/main/install.sh | bash
 ```
 
-> 💡 Read `install.sh` before running it (especially with `curl | bash`) — it's short and transparent.
-
-`install.sh` will: install `@larksuite/cli@latest` → install the skill into `~/.claude/skills` → install the helper into `~/.local/bin` → wire the auto-refresh hook into `~/.claude/settings.json`. Remove anytime with `./uninstall.sh`.
-
-### 2. Get your App ID / App Secret (one-time)
-
-> Official FAQ: <https://open.larkoffice.com/document/faq/trouble-shooting/how-to-obtain-app-id>
-
-1. Open the developer console for your edition:
-   - Feishu (China): <https://open.feishu.cn/app>
-   - Lark (international): <https://open.larksuite.com/app>
-2. No app yet? Click **Create custom app** → name it, add an icon → create.
-3. Open the app → left menu → **Credentials & Basic Info**.
-4. Copy the **App ID**, then reveal/copy the **App Secret**.
-5. On the same page, under **Security Settings**, **enable "long-lived refresh_token"** (required for durable auto-refresh).
-
-> ⚠️ The App Secret is a password. Keep it only in `~/.lark-cli/config.json` on your machine; **never** paste it into public channels or logs.
-
-### 3. Log in once
-
+Then log in once:
 ```bash
 lark-cli config init --new         # enter brand + App ID/Secret
-lark-cli auth login --recommend    # approve OAuth (browser or QR — see Usage)
+lark-cli auth login --recommend    # approve OAuth (browser or QR)
 ```
+Uninstall anytime: `./uninstall.sh` (keeps your credentials).
+</details>
 
-Not comfortable with the terminal? Open Claude Code and say *"help me connect lark-cli"* — the skill guides all three steps. Then **restart Claude Code**.
+---
 
-## Usage
+## 💬 Try it
 
-### Inside Claude Code
-After installing, just talk naturally — Claude Code runs `lark-cli` for you:
+After setup, just talk naturally in Claude Code — it types `lark-cli` for you:
 
-> *"What's on my plate today?"*
-> *"Summarize my unread mail."*
-> *"Create a doc called 'Weekly plan' with three bullet points."*
+> *"What do I have to do today?"*
+> *"Summarize my unread emails."*
+> *"Create a doc called 'Weekly Plan' with 3 bullet points."*
+> *"Log into Lark with a QR code."* (when you need to re-auth)
 
-### Directly via the CLI
-
+Prefer the raw CLI:
 ```bash
-lark-cli contact +get-user --as user        # your own profile
-lark-cli calendar +agenda --as user         # today's agenda
-lark-cli im send --to "<chat_id>" --text "hello" --as bot
+lark-cli contact +get-user --as user     # your own info
+lark-cli calendar +agenda  --as user      # today's agenda
 ```
+> Syntax: shortcuts use a `+` prefix (e.g. `contact +get-user`).
 
-> Syntax note: shortcuts use a `+` prefix (e.g. `contact +get-user`), not `contact get-user`.
+---
 
-### QR-code login (handy for remote users)
+## 🔄 Token & auto-update
 
-```bash
-OUT=$(lark-cli auth login --recommend --no-wait --json)
-URL=$(echo "$OUT" | python3 -c "import sys,json;print(json.load(sys.stdin).get('verification_url',''))")
-CODE=$(echo "$OUT" | python3 -c "import sys,json;print(json.load(sys.stdin).get('device_code',''))")
+The installer wires two `SessionStart` hooks into `~/.claude/settings.json` (they run each time Claude Code starts):
 
-lark-cli auth qrcode "$URL" --ascii          # print QR in the terminal to scan
-# or: lark-cli auth qrcode "$URL" --output qr.png
+- **Keeps the token fresh** — `lark-cli-ensure-auth --quiet` silently refreshes via the refresh_token and **never opens a browser**. The Lark token (~2h) is fully separate from your Claude quota.
+- **Nudges CLI updates (every 30 days by default)** — `lark-cli-check-update --quiet` compares your installed version against the latest on npm. Between checks it exits instantly with **no network call**, so it never slows a session down.
 
-# open the Lark/Feishu app on your phone → scan → approve, then finish:
-lark-cli auth login --device-code "$CODE" --json
-```
+Tune it with environment variables (set in `~/.zshrc` or `~/.bashrc`):
 
-In Claude Code, just say *"log in to lark with QR"*.
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `LARK_CLI_AUTO_UPDATE` | `0` (notify only) | Set `1` to **auto-run** `npm i -g @larksuite/cli@latest` when a newer version exists, instead of only notifying. |
+| `LARK_CLI_UPDATE_INTERVAL_DAYS` | `30` | Change the check interval (e.g. `7` = weekly). |
 
-### Token & auto-refresh
+Update manually anytime: `npm i -g @larksuite/cli@latest`.
 
-- The `SessionStart` hook runs `lark-cli-ensure-auth --quiet` each session → silent refresh via the refresh_token, no browser.
-- Run it manually anytime: `lark-cli-ensure-auth` (no flags) → if needed, shows a QR + opens the browser to re-login.
-- The **Lark** token (free, ~2h) is completely separate from your **Claude** usage limit (Pro plan, 5-hour window) — this hook only manages the Lark token.
+---
 
-## Contributing
+## 🤝 Contributing & structure
 
-Issues and PRs are welcome. The repo is intentionally small and readable so anyone can fork and adapt it.
-
-### Structure
+Issues/PRs welcome. The repo is deliberately small and easy to fork.
 
 ```
 lark-cli-onboarding/
 ├── install.sh          # idempotent bootstrap (npm + copy skill/helper + merge hook)
-├── uninstall.sh        # clean removal, keeps your credentials
+├── uninstall.sh        # clean removal, keeps credentials
 └── skills/lark-cli-setup/
-    ├── SKILL.md        # what Claude Code reads to guide setup & login
-    ├── INSTALL.md
-    └── scripts/lark-cli-ensure-auth   # auto-refresh helper (reads .identities.user.tokenStatus)
+    ├── SKILL.md        # Claude Code reads this to guide setup & login
+    └── scripts/
+        ├── lark-cli-ensure-auth    # token auto-refresh (reads .identities.user.tokenStatus)
+        └── lark-cli-check-update   # periodic CLI update notifier / auto-updater
 ```
 
-### Development tips
-- **Changing install behavior** → edit `install.sh`; keep it idempotent (merge, don't blindly append).
-- **Editing the token helper** → note that CLI ≥ 1.0.5x puts status at `.identities.user.tokenStatus` (no longer a top-level `.tokenStatus`); `--quiet` must never open a browser.
-- **Running on Codex CLI** → Codex also supports Skills + a `SessionStart` hook, but under `~/.codex/` (TOML config), not `~/.claude/`. Adding a branch in `install.sh` that detects `~/.codex` and copies to the right place is a very welcome PR.
-- After changes, syntax-check: `bash -n install.sh uninstall.sh skills/lark-cli-setup/scripts/lark-cli-ensure-auth`.
-
-### Reporting bugs / sending PRs
-1. Open an [issue](https://github.com/nixthinh-bit/lark-cli-onboarding/issues) with your environment (OS, `node -v`, `lark-cli --version`) and repro steps.
-2. Fork → feature branch → clear commits → open a Pull Request.
-3. **Never** commit credentials, App Secrets, tokens, or internal infrastructure URLs.
+**Never** commit credentials, App Secrets, tokens, or internal infra paths. After editing, syntax-check:
+```bash
+bash -n install.sh uninstall.sh skills/lark-cli-setup/scripts/*
+```
 
 ## License
 
