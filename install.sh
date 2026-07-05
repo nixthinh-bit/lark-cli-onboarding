@@ -17,7 +17,18 @@
 
 set -euo pipefail
 
-SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# When run via `curl | bash`, BASH_SOURCE[0] points at nothing on disk, so we
+# can't resolve our own directory to grab the skill files. Detect that case
+# and fetch the repo into a temp dir instead.
+if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
+  SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+else
+  command -v git >/dev/null 2>&1 || { echo "git is required to install via curl | bash" >&2; exit 1; }
+  SRC_DIR="$(mktemp -d)"
+  trap 'rm -rf "$SRC_DIR"' EXIT
+  printf '\033[1;36m▶\033[0m %s\n' "Fetching lark-cli-onboarding sources …"
+  git clone --depth 1 -q https://github.com/nixthinh-bit/lark-cli-onboarding.git "$SRC_DIR"
+fi
 SKILL_SRC="$SRC_DIR/skills/lark-cli-setup"
 SKILL_DST="$HOME/.claude/skills/lark-cli-setup"
 BIN_DST="$HOME/.local/bin"
