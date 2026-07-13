@@ -173,6 +173,21 @@ print("hooks added: " + ", ".join(added) if added else "hooks already present")
 PY
 ok "SessionStart hook ready (runs '$ENSURE --quiet' — silent, never opens a browser)."
 
+# --- 4b. recommend (do NOT auto-install) the official Lark agent skills ---------
+# `@larksuite/cli` now ships ~27 official skills (lark-base, lark-doc, lark-sheets,
+# lark-mail, lark-calendar, lark-im…) that let Claude actually DRIVE Lark, not just
+# authenticate. We deliberately DON'T install them silently — they land in
+# ~/.claude/skills globally and affect every project, so the user should opt in.
+if ls "$HOME/.claude/skills" 2>/dev/null | grep -q '^lark-base$'; then
+  ok "Official Lark skills already installed (lark-base, lark-doc, …)."
+else
+  say "Optional but recommended: install the official Lark skill pack so Claude can drive"
+  echo "    Base / Docs / Sheets / Mail / Calendar / IM by talking. It adds ~27 skills to"
+  echo "    ~/.claude/skills (affects all projects). Install when you're ready with:"
+  echo "        npx skills add larksuite/cli -g -y"
+  echo "    …or just ask Claude Code to do it — the lark-cli-setup skill will offer this step."
+fi
+
 # --- 5. status + honest next steps ---------------------------------------------
 echo
 if "$CLI" auth status >/dev/null 2>&1 && \

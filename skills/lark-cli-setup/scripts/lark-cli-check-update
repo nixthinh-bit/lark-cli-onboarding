@@ -72,13 +72,16 @@ newest="$(printf '%s\n%s\n' "$local_v" "$remote_v" | sort -V | tail -1)"
 if [ "$newest" = "$local_v" ]; then exit 0; fi
 
 if [ "${LARK_CLI_AUTO_UPDATE:-0}" = "1" ]; then
-  if npm install -g @larksuite/cli@latest >/dev/null 2>&1; then
+  # Prefer the built-in `lark-cli update` — it works regardless of how the CLI
+  # was installed (npm, the official bootstrap, brew…). Fall back to npm.
+  # `</dev/null` guarantees no interactive prompt can hang a SessionStart hook.
+  if lark-cli update </dev/null >/dev/null 2>&1 || npm install -g @larksuite/cli@latest </dev/null >/dev/null 2>&1; then
     ok "lark-cli auto-updated ${local_v} → ${remote_v}"
   else
-    warn "lark-cli ${remote_v} is available but auto-update failed. Run: npm i -g @larksuite/cli@latest"
+    warn "lark-cli ${remote_v} is available but auto-update failed. Run: lark-cli update  (or: npm i -g @larksuite/cli@latest)"
   fi
 else
-  warn "lark-cli ${local_v} installed; ${remote_v} is available. Update with: npm i -g @larksuite/cli@latest"
+  warn "lark-cli ${local_v} installed; ${remote_v} is available. Update with: lark-cli update  (or: npm i -g @larksuite/cli@latest)"
 fi
 
 exit 0
