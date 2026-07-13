@@ -14,16 +14,43 @@ This kit lets [Claude Code](https://claude.com/claude-code) drive your **Lark/Fe
 
 ## ✅ Prepare first (5 minutes)
 
-Get these 4 things ready and installing is just pasting one sentence and following along:
+Only **2 things are truly required** — Claude installs the rest (Node.js, python3) for you, right in the terminal:
 
 | # | You need | Notes |
 |---|----------|-------|
 | 1 | **Claude Pro (or higher) + Claude Code installed** | Claude Code is a terminal CLI — [install it here](https://claude.com/claude-code). Sign in with your Claude Pro account. |
-| 2 | **Node.js ≥ 18** (with `npm`) | Check: `node -v`. Missing? Grab the **LTS** build at [nodejs.org](https://nodejs.org). macOS/Linux; Windows via WSL. |
-| 3 | **A Feishu/Lark app approved by your admin** | You (or an admin) create an app in the console, copy its **App ID + App Secret**, and **enable "long-lived refresh_token"**. Not an admin? Ask your admin to create/approve it and grant scopes. Claude walks you through it. |
-| 4 | **Your phone already signed into the Lark/Feishu app** | So you can **scan a QR code** to approve login in ~10 seconds instead of wrestling with a desktop browser. |
+| 2 | **A Feishu/Lark app** (you can make one in ~2 min) | Click straight into the console — Lark (intl): **[→ Create custom app (open.larksuite.com)](https://open.larksuite.com/app)** · Feishu (CN): **[→ Create custom app (open.feishu.cn)](https://open.feishu.cn/app)** → **Create custom app** → copy **App ID + App Secret** → enable **"long-lived refresh_token"**. Claude walks you through **exactly what to click**. ⚠️ **Not an admin?** A self-created app usually must be **approved/enabled by your tenant admin** (scopes too) before login works — get the admin to approve first; that wait is out of your hands. Team already has an app? Ask an admin for the App ID/Secret. |
+| 3 | *(recommended)* **Your phone signed into the Lark/Feishu app** | So you can **scan a QR** to approve login in ~10s. No phone? Fine — just click the login link on your computer. |
 
-> ⚠️ The App Secret is a password. Keep it on your machine only — never paste it into public chats or logs.
+**Node.js ≥ 18 & python3:** no need to pre-install. `install.sh` detects what's missing and installs it via Homebrew (macOS) / apt / dnf. **No Homebrew on your Mac?** Go to **[brew.sh](https://brew.sh)** → click the copy button (📋) on the *"Install Homebrew"* command box → paste it into the terminal and press Enter → type your **Mac password** (nothing shows as you type — that's normal) → then re-run. Claude can do this step for you too.
+
+> ⚠️ The App Secret is a password. Keep it on your machine only — never paste it into public chats or logs. Claude won't print it back or save it to memory.
+
+### What you'll see during setup (for non-technical users)
+
+- **Permission pop-ups** to run a command → click **Allow once**. These commands only install things — nothing gets deleted, nothing costs money.
+- Claude creates a dedicated folder **`~/Downloads/Claude x Lark`** and works inside it to keep things tidy.
+- **If a step asks for your Mac password** (only when installing Homebrew): type it **directly into your own Terminal window** — **never** paste it into the chat with Claude. It stays on your machine; Claude never sees it. Note: **the password is invisible as you type** (no dots/asterisks) — it's not frozen, just type and press Enter. Password steps you **run yourself in Terminal**; Claude can't do them for you (its terminal can't receive the password prompt).
+- Near the end there's **one manual step**: click the login link (or scan the QR with your phone) to approve access. Then you're live.
+
+<details>
+<summary>📖 How to open a Terminal & which password to type (click to expand)</summary>
+
+**On macOS**
+1. Press `Cmd (⌘)` + `Space` → type `Terminal` → Enter. (Or: Finder → Applications → Utilities → Terminal.)
+2. **Paste** the command you were given (e.g. the Homebrew command copied from [brew.sh](https://brew.sh)) with `Cmd + V` → Enter.
+3. When you see `Password:` → type your **Mac login password** (the one you use to unlock the machine / install apps). **Nothing shows as you type** — just type it and press Enter. If it says `Press RETURN to continue`, press Enter.
+
+**On Windows**
+> ⚠️ This kit runs on **WSL (Ubuntu)** — **not** native PowerShell/CMD (no bash/apt there). On Windows, install WSL first and do every step inside Ubuntu.
+- Claude Code runs under **WSL (Ubuntu)**. Open **Start** → type `Ubuntu` (or `WSL`) → Enter. *(No WSL yet? Right-click **PowerShell** → "Run as administrator" → run `wsl --install` → reboot, and set an Ubuntu username + password when prompted.)*
+- **Paste** the Linux command (e.g. `sudo apt-get update && sudo apt-get install -y nodejs npm python3`) → Enter. *(Paste in a Windows terminal: right-click, or `Ctrl + Shift + V`.)*
+- When you see `[sudo] password for <name>:` → type your **Ubuntu/WSL user password** (the one you set the first time you opened Ubuntu) — **NOT** your Windows login password. It's invisible as you type too.
+- Windows has **no Homebrew** — everything is installed inside Ubuntu with `apt` as above.
+
+> Mac or Windows: this password goes **straight into the Terminal**, never into the chat with Claude.
+
+</details>
 
 ---
 
@@ -35,7 +62,7 @@ Open **Claude Code** and paste this, then hit Enter:
 Clone https://github.com/nixthinh-bit/lark-cli-onboarding for me, then connect lark-cli by following its instructions.
 ```
 
-Claude Code will: clone the repo → run `install.sh` (installs the CLI + skill + auto-refresh) → then **guide you step by step**: enter your App ID/Secret, show a **QR code to scan with your phone**, and verify the connection. You just **follow** its prompts.
+Claude Code will: install anything missing (Node.js/python via Homebrew/apt) → clone the repo → run `install.sh` (installs the CLI + skill + auto-refresh) → then **guide you step by step**: how to create a custom app + copy the App ID/Secret, show a **click-to-open login link** plus a **crisp QR image to scan with your phone**, and verify the connection. You just **follow** its prompts and click **Allow once** when asked.
 
 When it's done, **restart Claude Code** once to load the new skill + hooks.
 
