@@ -173,26 +173,22 @@ print("hooks added: " + ", ".join(added) if added else "hooks already present")
 PY
 ok "SessionStart hook ready (runs '$ENSURE --quiet' — silent, never opens a browser)."
 
-# --- 4b. recommend (do NOT auto-install) the official Lark agent skills ---------
-# `@larksuite/cli` now ships ~27 official skills (lark-base, lark-doc, lark-sheets,
-# lark-mail, lark-calendar, lark-im…) that let Claude actually DRIVE Lark, not just
-# authenticate. We deliberately DON'T install them silently — they land in
-# ~/.claude/skills globally and affect every project, so the user should opt in.
-if ls "$HOME/.claude/skills" 2>/dev/null | grep -q '^lark-base$'; then
-  ok "Official Lark skills already installed (lark-base, lark-doc, …)."
-else
-  say "Optional but recommended: install the official Lark skill pack so Claude can drive"
-  echo "    Base / Docs / Sheets / Mail / Calendar / IM by talking. It adds ~27 skills to"
-  echo "    ~/.claude/skills (affects all projects). Install when you're ready with:"
-  echo "        npx skills add larksuite/cli -g -y"
-  echo "    …or just ask Claude Code to do it — the lark-cli-setup skill will offer this step."
-fi
-
 # --- 5. status + honest next steps ---------------------------------------------
 echo
 if "$CLI" auth status >/dev/null 2>&1 && \
    "$CLI" auth status 2>/dev/null | python3 -c 'import sys,json;u=json.load(sys.stdin).get("identities",{}).get("user",{});exit(0 if u.get("tokenStatus") else 1)' 2>/dev/null; then
   ok "Existing Lark auth detected — you're ready. Try: lark-cli contact +get-user --as user"
+  # Only NOW (already connected) is it worth suggesting the official skill pack —
+  # bringing it up before auth just clutters a first-timer's flow. Still opt-in:
+  # these ~27 skills land in ~/.claude/skills globally (every project), so the
+  # user chooses. Claude also offers this as Step 6 of the lark-cli-setup skill.
+  if ! ls "$HOME/.claude/skills" 2>/dev/null | grep -q '^lark-base$'; then
+    echo
+    say "Optional next: install the official Lark skill pack so Claude can drive Base / Docs /"
+    echo "    Sheets / Mail / Calendar / IM by talking (~27 skills → ~/.claude/skills, all projects):"
+    echo "        npx skills add larksuite/cli -g -y"
+    echo "    …or just ask Claude Code to do it — the lark-cli-setup skill offers this step."
+  fi
 else
   warn "No Lark auth yet. Finish the 2 human steps (once):"
   echo  "    1) Create a Feishu app + App ID/Secret at https://open.feishu.cn (enable long-lived refresh_token)"
