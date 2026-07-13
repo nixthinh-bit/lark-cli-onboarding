@@ -40,12 +40,68 @@ say()  { printf '\033[1;36m▶\033[0m %s\n' "$*"; }
 ok()   { printf '\033[1;32m✓\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!\033[0m %s\n' "$*"; }
 
-# --- 0. prerequisites ----------------------------------------------------------
-command -v node >/dev/null 2>&1 || { warn "Node.js is required (>=18). Install it first: https://nodejs.org"; exit 1; }
+# --- 0. prerequisites (auto-install what's missing) ----------------------------
+# We need Node.js >=18 (+npm) and python3. Rather than bail out, try to install
+# them with whatever package manager the machine has. On macOS that means
+# Homebrew; on Linux, apt/dnf/pacman. Homebrew itself needs a one-time password
+# prompt, so if it's absent we print the exact command instead of forcing it.
+OS="$(uname -s)"
+# A `sudo` / Homebrew password prompt needs a real interactive terminal (TTY).
+# If we're being run without one (e.g. an AI agent's non-interactive shell), the
+# prompt would hang with nowhere to type. Detect that and print the command for
+# the user to run themselves instead of freezing.
+have_tty() { [ -t 2 ] || [ -t 0 ]; }
+needs_manual_password() {
+  warn "This step needs your device password, which must be typed in a real terminal."
+  echo  "    Please run this yourself in your own Terminal window (the password stays on your machine;"
+  echo  "    it is invisible while typing — that's normal — just type it and press Enter):"
+  echo  "      $1"
+  echo  "    Then re-run this installer."
+}
+pkg_install() { # pkg_install <brew-formula> <apt/dnf/pacman-pkg>
+  local brewpkg="$1" linpkg="$2"
+  if [ "$OS" = "Darwin" ]; then
+    if command -v brew >/dev/null 2>&1; then
+      say "Installing $brewpkg via Homebrew …"; brew install "$brewpkg"   # brew needs no sudo
+    else
+      warn "Homebrew is not installed — it's the simplest way to get $brewpkg on macOS."
+      echo  "    Install Homebrew once from https://brew.sh (it asks for your Mac password — type it in"
+      echo  "    your own Terminal; it's invisible as you type). Command:"
+      echo  '      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+      echo  "    Then re-run this installer."
+      return 1
+    fi
+  elif command -v apt-get >/dev/null 2>&1; then
+    have_tty || { needs_manual_password "sudo apt-get update && sudo apt-get install -y $linpkg"; return 1; }
+    say "Installing $linpkg via apt …"; sudo apt-get update -y && sudo apt-get install -y "$linpkg"
+  elif command -v dnf >/dev/null 2>&1; then
+    have_tty || { needs_manual_password "sudo dnf install -y $linpkg"; return 1; }
+    say "Installing $linpkg via dnf …"; sudo dnf install -y "$linpkg"
+  elif command -v pacman >/dev/null 2>&1; then
+    have_tty || { needs_manual_password "sudo pacman -S --noconfirm $linpkg"; return 1; }
+    say "Installing $linpkg via pacman …"; sudo pacman -S --noconfirm "$linpkg"
+  else
+    warn "No supported package manager found — install $linpkg manually, then re-run."
+    return 1
+  fi
+}
+
+MISSING=0
+if ! command -v node >/dev/null 2>&1 || [ "$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)" -lt 18 ]; then
+  warn "Node.js >= 18 not found."
+  pkg_install node nodejs || MISSING=1
+fi
+command -v npm     >/dev/null 2>&1 || { pkg_install node npm || MISSING=1; }
+command -v python3 >/dev/null 2>&1 || { pkg_install python python3 || MISSING=1; }
+
+# re-check after any installs
+command -v node    >/dev/null 2>&1 || { warn "Node.js still missing — install it and re-run.";  MISSING=1; }
+command -v npm     >/dev/null 2>&1 || { warn "npm still missing — install Node.js and re-run.";  MISSING=1; }
+command -v python3 >/dev/null 2>&1 || { warn "python3 still missing — install it and re-run.";   MISSING=1; }
+[ "$MISSING" -eq 0 ] || { warn "Prerequisites incomplete. Fix the item(s) above, then re-run this installer."; exit 1; }
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
-[ "$NODE_MAJOR" -ge 18 ] || { warn "Node.js >= 18 required (found $(node -v))."; exit 1; }
-command -v npm >/dev/null 2>&1  || { warn "npm not found."; exit 1; }
-command -v python3 >/dev/null 2>&1 || { warn "python3 is required (used to merge settings + parse JSON)."; exit 1; }
+[ "$NODE_MAJOR" -ge 18 ] || { warn "Node.js >= 18 required (found $(node -v)). Upgrade it and re-run."; exit 1; }
+ok "Prerequisites OK — node $(node -v), npm $(npm -v), python3 present."
 
 # --- 1. install / update the official CLI --------------------------------------
 say "Installing @larksuite/cli (latest) …"

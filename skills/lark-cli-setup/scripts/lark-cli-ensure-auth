@@ -88,12 +88,24 @@ if [ -z "$URL" ] || [ -z "$CODE" ]; then
   log "❌ Could not start Device Flow. Run manually: lark-cli auth login --recommend"
   exit 1
 fi
-log "   Authorization URL: $URL"
+log ""
+log "   👉 Click to authorize:  $URL"
+log ""
 # Show a scannable QR so you can approve with the Lark app on your phone
-# (no desktop browser login needed). Falls back silently if qrcode unsupported.
+# (no desktop browser login needed). Prefer a crisp PNG opened in an image
+# viewer; only fall back to the (uglier) ASCII block QR if PNG generation fails.
 if [ -z "$QUIET" ]; then
-  echo "   Or scan this QR with the Lark/Feishu app on your phone:"
-  lark-cli auth qrcode "$URL" --ascii 2>/dev/null || true
+  QRDIR="$HOME/.lark-cli"; mkdir -p "$QRDIR"
+  QRIMG="$QRDIR/lark-login-qr.png"
+  if ( cd "$QRDIR" && lark-cli auth qrcode "$URL" --output lark-login-qr.png --size 512 >/dev/null 2>&1 ) && [ -f "$QRIMG" ]; then
+    echo "   Or scan this QR with the Lark/Feishu app on your phone (opening it now):"
+    echo "     $QRIMG"
+    command -v open >/dev/null 2>&1 && open "$QRIMG" 2>/dev/null || \
+      command -v xdg-open >/dev/null 2>&1 && xdg-open "$QRIMG" 2>/dev/null || true
+  else
+    echo "   Or scan this QR with the Lark/Feishu app on your phone:"
+    lark-cli auth qrcode "$URL" --ascii 2>/dev/null || true
+  fi
 fi
 command -v open >/dev/null 2>&1 && open "$URL" 2>/dev/null || \
   command -v xdg-open >/dev/null 2>&1 && xdg-open "$URL" 2>/dev/null || true
