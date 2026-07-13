@@ -2,7 +2,7 @@
 
 **Tiếng Việt** | [English](./README.en.md)
 
-> **Dán một câu vào Claude Code → trả lời vài câu hỏi → điều khiển được Lark/Feishu bằng lời nói.**
+> **Dán một câu vào Claude Code → làm theo hướng dẫn → điều khiển được Lark/Feishu bằng lời nói.**
 
 ![status](https://img.shields.io/badge/status-active-brightgreen)
 ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue)
@@ -10,24 +10,47 @@
 
 Bộ này giúp [Claude Code](https://claude.com/claude-code) điều khiển không gian làm việc **Lark/Feishu** của bạn — đọc mail, tóm tắt họp, quản lý task, gửi tin, tạo tài liệu, thao tác Base — bằng ngôn ngữ tự nhiên, ngay trong terminal. Nó gói sẵn khâu cài đặt + đăng nhập + **tự làm mới token** để bạn không phải đăng nhập lại mỗi 2 giờ.
 
-> 🙋 **Không rành kỹ thuật?** Bạn **không cần nhớ lệnh nào**. Chỉ cần dán 1 câu ở [Bước 1](#-cài-đặt--chỉ-1-câu), rồi trả lời câu hỏi của Claude và bấm **Allow once**. Phần [Sẽ diễn ra thế nào](#-sẽ-diễn-ra-thế-nào--từng-bước) mô tả đúng những gì bạn sẽ thấy.
-
 ---
 
 ## ✅ Chuẩn bị trước (5 phút)
 
-Thật ra chỉ cần **2 thứ bắt buộc** — phần còn lại Claude tự lo:
+Thật ra chỉ cần **2 thứ bắt buộc** — phần còn lại (Node.js, python3) Claude sẽ tự cài giúp bạn ngay trong terminal:
 
 | # | Cần có | Ghi chú |
 |---|--------|---------|
 | 1 | **Claude Pro trở lên + đã cài Claude Code** | Claude Code là CLI chạy trong terminal — [cài tại đây](https://claude.com/claude-code). Đăng nhập bằng tài khoản Claude Pro. |
-| 2 | **Một app Feishu/Lark** (tự tạo 2 phút) | Claude sẽ dẫn bạn tạo ở [Bước 3](#-sẽ-diễn-ra-thế-nào--từng-bước). Công ty đã có app sẵn → xin admin **App ID + App Secret**. |
+| 2 | **Một app Feishu/Lark** (bạn tự tạo được, 2 phút) | Bấm thẳng vào console — Lark quốc tế: **[→ Tạo custom app (open.larksuite.com)](https://open.larksuite.com/app)** · Feishu (TQ): **[→ Tạo custom app (open.feishu.cn)](https://open.feishu.cn/app)** → **Create custom app** → lấy **App ID + App Secret** → bật **"long-lived refresh_token"**. Claude dẫn bạn **từng bước bấm gì**. ⚠️ **Không phải admin?** App tự tạo thường phải **chờ admin tenant duyệt/bật** (và duyệt scope) thì mới đăng nhập được — nhờ admin duyệt trước; đây là bước chờ nằm ngoài tầm bạn. Công ty đã có app sẵn → xin admin App ID/Secret. |
+| 3 | *(khuyến nghị)* **Điện thoại đã đăng nhập app Lark/Feishu** | Để **quét QR** duyệt đăng nhập trong 10 giây, khỏi loay hoay browser. Không có cũng được — bạn bấm link đăng nhập trên máy. |
 
-*Tùy chọn:* **điện thoại đã đăng nhập app Lark/Feishu** để **quét QR** đăng nhập cho nhanh (không có cũng được — bấm link trên máy).
-
-**Node.js & python3:** không cần cài trước — Claude tự phát hiện thiếu và cài giúp (qua Homebrew trên macOS, hoặc apt/dnf trên Linux). Nếu máy Mac chưa có Homebrew, xem mục [📖 Cách mở Terminal & gõ mật khẩu](#-khi-cài-bạn-sẽ-thấy-gì).
+**Node.js ≥ 18 & python3:** không cần cài trước. `install.sh` tự phát hiện thiếu và cài qua Homebrew (macOS) / apt / dnf. Máy Mac **chưa có Homebrew**? Vào **[brew.sh](https://brew.sh)** → bấm nút copy (📋) ở ô lệnh mục *"Install Homebrew"* → dán vào terminal, Enter → nhập **mật khẩu máy Mac** (gõ không hiện chữ là bình thường) → xong chạy lại. Claude cũng làm hộ được bước này.
 
 > ⚠️ App Secret = mật khẩu. Chỉ lưu trên máy bạn, **đừng** dán lên chat công khai hay log. Claude không in lại, không lưu vào bộ nhớ.
+
+### Khi cài, bạn sẽ thấy gì (dành cho người không rành kỹ thuật)
+
+- **Pop-up xin phép chạy lệnh** → bấm **Allow once** (Cho phép một lần). Các lệnh ở đây chỉ cài đặt, không xoá dữ liệu, không tốn tiền.
+- Claude sẽ tạo sẵn thư mục riêng **`~/Downloads/Claude x Lark`** và làm việc trong đó cho gọn.
+- **Nếu có bước hỏi mật khẩu máy** (chỉ khi cài Homebrew): gõ **thẳng vào cửa sổ Terminal của bạn**, **đừng** dán vào khung chat với Claude. Mật khẩu chỉ ở lại trên máy, Claude không thấy. Lưu ý: **gõ mật khẩu sẽ không hiện ký tự** — không phải bị treo, cứ gõ rồi Enter. Bước cần mật khẩu thì bạn **tự chạy trong Terminal**, Claude không chạy hộ được (terminal của Claude không nhập mật khẩu vào được).
+- Gần cuối sẽ có **1 bước tay**: bấm link đăng nhập (hoặc quét QR bằng điện thoại) để duyệt quyền. Xong là chạy được.
+
+<details>
+<summary>📖 Cách mở Terminal & gõ mật khẩu nào (bấm để xem)</summary>
+
+**Trên macOS**
+1. Nhấn `Cmd (⌘)` + `Space` → gõ `Terminal` → Enter. (Hoặc: Finder → Applications → Utilities → Terminal.)
+2. **Dán lệnh** được đưa (vd lệnh cài Homebrew copy từ [brew.sh](https://brew.sh)) bằng `Cmd + V` → Enter.
+3. Khi thấy dòng `Password:` → gõ **mật khẩu đăng nhập máy Mac** (mật khẩu bạn dùng để mở máy / cài ứng dụng). **Gõ sẽ không hiện gì** — cứ gõ xong rồi Enter. Nếu nó nói `Press RETURN to continue` thì bấm Enter.
+
+**Trên Windows**
+> ⚠️ Bộ này chạy trên **WSL (Ubuntu)** — **không** chạy trên PowerShell/CMD thuần (không có bash/apt). Người dùng Windows hãy cài WSL trước rồi làm mọi bước bên trong Ubuntu.
+- Claude Code chạy qua **WSL (Ubuntu)**. Mở **Start** → gõ `Ubuntu` (hoặc `WSL`) → Enter. *(Chưa có WSL? Mở **PowerShell** bằng chuột phải → "Run as administrator" → chạy `wsl --install` → khởi động lại máy, đặt username + mật khẩu cho Ubuntu khi được hỏi.)*
+- **Dán lệnh** Linux (vd `sudo apt-get update && sudo apt-get install -y nodejs npm python3`) → Enter. *(Dán trong terminal Windows: chuột phải hoặc `Ctrl + Shift + V`.)*
+- Khi thấy `[sudo] password for <tên>:` → gõ **mật khẩu người dùng Ubuntu/WSL** (cái bạn đặt lần đầu mở Ubuntu) — **KHÔNG phải** mật khẩu đăng nhập Windows. Gõ cũng không hiện chữ.
+- Windows **không có Homebrew** — mọi thứ cài trong Ubuntu bằng `apt` như trên.
+
+> Dù Mac hay Windows: mật khẩu này gõ **thẳng vào Terminal**, không bao giờ dán vào khung chat với Claude.
+
+</details>
 
 ---
 
@@ -39,83 +62,12 @@ Mở **Claude Code**, dán đúng câu này rồi Enter:
 Pull repo https://github.com/nixthinh-bit/lark-cli-onboarding giúp tôi, rồi kết nối lark-cli theo hướng dẫn trong đó.
 ```
 
-Đó là tất cả những gì bạn cần gõ. Từ đây Claude dẫn bạn đi — xem chi tiết bên dưới.
+Claude Code sẽ tự: cài các thứ còn thiếu (Node.js/python qua Homebrew/apt) → clone repo → chạy `install.sh` (cài CLI + skill + auto-refresh) → rồi **dẫn bạn từng bước**: cách tạo custom app + lấy App ID/Secret, hiện **link đăng nhập bấm-là-vào** kèm **QR ảnh nét để quét bằng điện thoại**, kiểm tra kết nối. Bạn chỉ việc **làm theo** những gì nó hỏi và bấm **Allow once** khi được hỏi.
 
----
-
-## 🧭 Sẽ diễn ra thế nào — từng bước
-
-Mỗi bước ghi rõ: **🗣️ bạn đưa gì vào**, **🤖 Claude hỏi lại gì**, **✅ bạn nhận được gì**, và **✂️ nếu không cần thì nói gì**.
-
-### Bước 1 — Khởi động
-- 🗣️ **Bạn dán** câu lệnh ở trên.
-- 🤖 **Claude hỏi:** Bạn dùng **Lark quốc tế** hay **Feishu (Trung Quốc)**? Đã có app Lark chưa hay cần tạo mới?
-- ✅ **Bạn thấy:** Claude tóm tắt các bước sắp làm, rồi xin phép chạy lệnh → bấm **Allow once**.
-
-### Bước 2 — Chuẩn bị máy *(tự động)*
-- 🤖 Claude kiểm tra Node.js/python; nếu thiếu thì xin phép cài.
-- ✅ **Bạn thấy:** `✓ Prerequisites OK — node …`
-- ✂️ **Máy đã có sẵn?** Claude tự bỏ qua, bạn không phải làm gì.
-
-### Bước 3 — Tạo app Lark & lấy App ID/Secret *(bước tay)*
-- 🤖 **Claude gửi bạn link bấm-là-vào console** + chỉ từng bước: bấm **Create custom app** → mở **Credentials & Basic Info** → copy **App ID** (`cli_…`) và **App Secret** (bấm con mắt để hiện) → bật **long-lived refresh_token**.
-- 🗣️ **Bạn dán lại** App ID + App Secret vào khung chat.
-- ⏳ **Nếu bạn KHÔNG phải admin:** app tự tạo thường phải **chờ admin tenant duyệt** mới đăng nhập được. Claude sẽ **tạm dừng** — bạn nhờ admin duyệt rồi quay lại. Đây là bước chờ nằm ngoài tầm bạn.
-
-### Bước 4 — Đăng nhập *(bước tay)*
-- 🤖 Claude gửi **[👉 link đăng nhập bấm-là-vào]** kèm **ảnh QR nét vừa mở sẵn** để quét bằng điện thoại.
-- 🗣️ **Bạn:** bấm link (hoặc quét QR) → duyệt trong app Lark → nhắn lại **"done"**.
-- ✅ **Bạn thấy:** `tokenStatus: valid`.
-
-### Bước 5 — Kiểm tra
-- ✅ Claude chạy thử và in thông tin của bạn → kết nối OK. Nhắc **khởi động lại Claude Code** một lần để nạp skill + hook.
-
-### Bước 6 — *(Tùy chọn)* Bộ skill Lark chính thức
-- 🤖 Claude hỏi: *"Cài thêm ~27 skill chính thức (Base / Docs / Mail / Calendar / IM…) để mình thao tác được không? Nó thêm vào skills toàn cục của bạn."*
-- ✅ Đồng ý → có ngay khả năng thao tác Base, Docs, Mail… bằng lời. (Xem [mục skill](#-bộ-skill-lark-chính-thức-khuyến-nghị-tùy-chọn).)
-
----
-
-### ✂️ "Tôi không cần hết mọi thứ" — nói ở đâu, lúc nào
-
-Cứ nói bằng lời bình thường, Claude sẽ thu hẹp lại:
-
-| Bạn muốn | Nói lúc nào | Nói gì (ví dụ) |
-|---|---|---|
-| Chỉ vài chức năng (vd chỉ mail) | Bước 1, hoặc khi Claude trình kế hoạch | *"Tôi chỉ cần đọc & tóm tắt mail, không cần Base/Sheets"* |
-| Không cài đủ 27 skill toàn cục | Bước 6, khi Claude hỏi | *"Không cài skill pack"* — hoặc *"chỉ cài lark-mail, lark-calendar"* |
-| Không muốn tự động nhắc cập nhật | Bất cứ lúc nào | *"Tắt nhắc cập nhật CLI giúp tôi"* (Claude gỡ hook check-update) |
-| Đã có sẵn app / Node | Bước 1 | *"Máy tôi có Node rồi; app Lark cũng có sẵn App ID/Secret"* |
-
----
-
-## 👀 Khi cài, bạn sẽ thấy gì
-
-- **Pop-up xin phép chạy lệnh** → bấm **Allow once** (Cho phép một lần). Các lệnh ở đây chỉ cài đặt, **không xoá dữ liệu, không tốn tiền**.
-- Claude tạo sẵn thư mục riêng **`~/Downloads/Claude x Lark`** và làm việc trong đó cho gọn.
-- **Nếu có bước hỏi mật khẩu máy** (chỉ khi cần cài Homebrew/Node): gõ **thẳng vào cửa sổ Terminal**, **đừng** dán vào khung chat. Mật khẩu chỉ ở lại trên máy, Claude không thấy — và **gõ sẽ không hiện ký tự** (không phải treo, cứ gõ rồi Enter). Bước cần mật khẩu bạn **tự chạy trong Terminal** (terminal của Claude không nhập mật khẩu được).
+Xong thì **khởi động lại Claude Code** một lần để nạp skill + hook mới.
 
 <details>
-<summary>📖 Cách mở Terminal & gõ mật khẩu nào (bấm để xem)</summary>
-
-**Trên macOS**
-1. Nhấn `Cmd (⌘)` + `Space` → gõ `Terminal` → Enter. (Hoặc: Finder → Applications → Utilities → Terminal.)
-2. **Dán lệnh** được đưa (vd lệnh cài Homebrew copy từ [brew.sh](https://brew.sh) — bấm nút copy 📋 ở ô *"Install Homebrew"*) bằng `Cmd + V` → Enter.
-3. Khi thấy `Password:` → gõ **mật khẩu đăng nhập máy Mac** (mật khẩu mở máy / cài app). **Gõ không hiện gì** — cứ gõ xong Enter. Nếu nó nói `Press RETURN to continue` thì bấm Enter.
-
-**Trên Windows**
-> ⚠️ Bộ này chạy trên **WSL (Ubuntu)** — **không** chạy trên PowerShell/CMD thuần (không có bash/apt). Người dùng Windows hãy cài WSL trước rồi làm mọi bước bên trong Ubuntu.
-- Mở **Start** → gõ `Ubuntu` (hoặc `WSL`) → Enter. *(Chưa có WSL? Mở **PowerShell** bằng chuột phải → "Run as administrator" → chạy `wsl --install` → khởi động lại máy, đặt username + mật khẩu cho Ubuntu khi được hỏi.)*
-- **Dán lệnh** Linux → Enter *(dán trong terminal Windows: chuột phải hoặc `Ctrl + Shift + V`)*.
-- Khi thấy `[sudo] password for <tên>:` → gõ **mật khẩu người dùng Ubuntu/WSL** (đặt lần đầu mở Ubuntu) — **KHÔNG phải** mật khẩu đăng nhập Windows. Cũng không hiện chữ.
-- Windows **không có Homebrew** — mọi thứ cài trong Ubuntu bằng `apt`.
-
-> Dù Mac hay Windows: mật khẩu gõ **thẳng vào Terminal**, không bao giờ dán vào khung chat với Claude.
-
-</details>
-
-<details>
-<summary>⌨️ Cách thủ công (nếu thích tự chạy lệnh)</summary>
+<summary>Cách thủ công (nếu thích tự chạy lệnh)</summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nixthinh-bit/lark-cli-onboarding/main/install.sh | bash
@@ -154,13 +106,13 @@ lark-cli calendar +agenda  --as user      # lịch hôm nay
 Bộ cài cắm 2 hook `SessionStart` vào `~/.claude/settings.json` (chạy mỗi khi mở Claude Code):
 
 - **Giữ token luôn tươi** — `lark-cli-ensure-auth --quiet` refresh im lặng bằng refresh_token, **không bao giờ tự bật browser**. Token Lark (~2 giờ) tách biệt hoàn toàn với hạn mức Claude.
-- **Nhắc cập nhật CLI (mặc định 30 ngày/lần)** — `lark-cli-check-update --quiet` so version đang cài với bản mới nhất. Giữa các lần kiểm tra nó thoát tức thì, **không gọi mạng**, nên không làm chậm phiên.
+- **Nhắc cập nhật CLI (mặc định 30 ngày/lần)** — `lark-cli-check-update --quiet` so version đang cài với bản mới nhất trên npm. Giữa các lần kiểm tra nó thoát tức thì, **không gọi mạng**, nên không làm chậm phiên.
 
 Tùy chỉnh bằng biến môi trường (đặt trong `~/.zshrc` hoặc `~/.bashrc`):
 
 | Biến | Mặc định | Tác dụng |
 |------|----------|----------|
-| `LARK_CLI_AUTO_UPDATE` | `0` (chỉ nhắc) | Đặt `1` để **tự cập nhật** (chạy `lark-cli update`, dự phòng `npm`) khi có bản mới, thay vì chỉ thông báo. |
+| `LARK_CLI_AUTO_UPDATE` | `0` (chỉ nhắc) | Đặt `1` để **tự chạy** `npm i -g @larksuite/cli@latest` khi có bản mới, thay vì chỉ thông báo. |
 | `LARK_CLI_UPDATE_INTERVAL_DAYS` | `30` | Đổi chu kỳ kiểm tra (vd `7` = mỗi tuần). |
 
 Cập nhật tay bất cứ lúc nào: **`lark-cli update`** (lệnh built-in, độc lập cách cài) — hoặc `npm i -g @larksuite/cli@latest`.
@@ -176,9 +128,7 @@ npx skills add larksuite/cli -g -y      # cài, rồi khởi động lại Claud
 lark-cli skills list                     # xem đã có skill nào
 ```
 
-> Các skill này **đã nằm sẵn trong gói `@larksuite/cli`**; lệnh trên chỉ **sao chúng ra `~/.claude/skills/`** để Claude tự phát hiện, **không tải gì mới**. Claude Code cũng sẽ **hỏi bạn** bước này ở [Bước 6](#-sẽ-diễn-ra-thế-nào--từng-bước).
->
-> **Định vị:** repo này lo **prereq tự động + auto-refresh token + onboarding no-code**; bộ skill chính thức lo **thao tác Base/Docs/Mail…** — hai thứ bổ sung cho nhau.
+> Claude Code cũng sẽ **hỏi bạn** bước này trong lúc onboarding. Định vị: repo này lo **prereq tự động + auto-refresh token + onboarding no-code**; bộ skill chính thức lo **thao tác Base/Docs/Mail…** — hai thứ bổ sung cho nhau.
 
 ---
 
@@ -188,7 +138,7 @@ Hoan nghênh issue/PR. Repo cố tình giữ nhỏ, dễ fork.
 
 ```
 lark-cli-onboarding/
-├── install.sh          # bootstrap idempotent (prereq + npm + copy skill/helper + merge hook)
+├── install.sh          # bootstrap idempotent (npm + copy skill/helper + merge hook)
 ├── uninstall.sh        # gỡ sạch, giữ nguyên credential
 └── skills/lark-cli-setup/
     ├── SKILL.md        # Claude Code đọc để dẫn cài đặt & đăng nhập
