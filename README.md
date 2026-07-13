@@ -115,7 +115,20 @@ Tùy chỉnh bằng biến môi trường (đặt trong `~/.zshrc` hoặc `~/.ba
 | `LARK_CLI_AUTO_UPDATE` | `0` (chỉ nhắc) | Đặt `1` để **tự chạy** `npm i -g @larksuite/cli@latest` khi có bản mới, thay vì chỉ thông báo. |
 | `LARK_CLI_UPDATE_INTERVAL_DAYS` | `30` | Đổi chu kỳ kiểm tra (vd `7` = mỗi tuần). |
 
-Cập nhật tay bất cứ lúc nào: `npm i -g @larksuite/cli@latest`.
+Cập nhật tay bất cứ lúc nào: **`lark-cli update`** (lệnh built-in, độc lập cách cài) — hoặc `npm i -g @larksuite/cli@latest`.
+
+---
+
+## 🧩 Bộ skill Lark chính thức (khuyến nghị, tùy chọn)
+
+`@larksuite/cli` có sẵn **~27 "agent skill" chính thức** (`lark-base`, `lark-doc`, `lark-sheets`, `lark-mail`, `lark-calendar`, `lark-im`, `lark-drive`, `lark-task`, `lark-wiki`…) — đây mới là thứ giúp Claude **thao tác thật** với Lark, không chỉ đăng nhập. Repo này cố tình **không tự cài** chúng (chúng nằm ở `~/.claude/skills` **toàn cục**, ảnh hưởng mọi project) — bạn tự quyết:
+
+```bash
+npx skills add larksuite/cli -g -y      # cài, rồi khởi động lại Claude Code
+lark-cli skills list                     # xem đã có skill nào
+```
+
+> Claude Code cũng sẽ **hỏi bạn** bước này trong lúc onboarding. Định vị: repo này lo **prereq tự động + auto-refresh token + onboarding no-code**; bộ skill chính thức lo **thao tác Base/Docs/Mail…** — hai thứ bổ sung cho nhau.
 
 ---
 

@@ -115,7 +115,20 @@ Tune it with environment variables (set in `~/.zshrc` or `~/.bashrc`):
 | `LARK_CLI_AUTO_UPDATE` | `0` (notify only) | Set `1` to **auto-run** `npm i -g @larksuite/cli@latest` when a newer version exists, instead of only notifying. |
 | `LARK_CLI_UPDATE_INTERVAL_DAYS` | `30` | Change the check interval (e.g. `7` = weekly). |
 
-Update manually anytime: `npm i -g @larksuite/cli@latest`.
+Update manually anytime: **`lark-cli update`** (built-in, install-method-agnostic) — or `npm i -g @larksuite/cli@latest`.
+
+---
+
+## 🧩 The official Lark skill pack (optional, recommended)
+
+`@larksuite/cli` ships **~27 official agent skills** (`lark-base`, `lark-doc`, `lark-sheets`, `lark-mail`, `lark-calendar`, `lark-im`, `lark-drive`, `lark-task`, `lark-wiki`…) — these are what let Claude actually **operate** Lark, not just authenticate. This repo deliberately **doesn't install them for you** (they live in `~/.claude/skills` **globally**, affecting every project) — your call:
+
+```bash
+npx skills add larksuite/cli -g -y      # install, then restart Claude Code
+lark-cli skills list                     # see what's installed
+```
+
+> Claude Code will also **offer** this during onboarding. Positioning: this repo handles **auto prerequisites + token auto-refresh + no-code onboarding**; the official pack handles **operating Base/Docs/Mail…** — they complement each other.
 
 ---
 

@@ -259,6 +259,23 @@ lark-cli im send --to "<chat_id>" --text "hello" --as bot
 
 ---
 
+## Step 6 (optional but recommended): install the official Lark skill pack
+
+`@larksuite/cli` ships ~27 official **agent skills** that let Claude actually *drive* Lark by talking — `lark-base`, `lark-doc`, `lark-sheets`, `lark-mail`, `lark-calendar`, `lark-im`, `lark-drive`, `lark-task`, `lark-wiki`, and more. Without them, this skill only gets the user *connected*; with them, "summarize my unread mail" or "add a row to that Base" actually work.
+
+**This is opt-in — ask first, don't install silently.** The pack lands in `~/.claude/skills/` **globally** (affects every Claude Code project, not just Lark work), so let the user decide. Say something like: *"Want me to also install Lark's official skill pack (~27 skills) so I can work with your Base, Docs, Mail, Calendar, etc.? It adds them to your global Claude skills."*
+
+If the user says yes:
+```bash
+npx skills add larksuite/cli -g -y
+```
+
+Then tell them to **restart Claude Code** so the new skills load. Check what's installed anytime with `lark-cli skills list`. (This only adds skills; it doesn't touch auth or the refresh hook.)
+
+> Note: one of these, `lark-shared`, also covers auth/setup — it overlaps with this `lark-cli-setup` skill. They coexist fine: `lark-cli-setup` owns first-time onboarding + prerequisites + the unattended token-refresh hook (which the official pack does **not** provide); `lark-shared` is for day-to-day auth commands.
+
+---
+
 ## Troubleshooting insufficient permissions
 
 Error responses include useful fields:
