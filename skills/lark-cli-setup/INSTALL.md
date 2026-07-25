@@ -11,11 +11,17 @@ A Claude Code skill that sets up the Lark/Feishu CLI (`@larksuite/cli`) from zer
 mkdir -p ~/.claude/skills
 cp -r skills/lark-cli-setup ~/.claude/skills/lark-cli-setup
 
-# 2. make the script executable
-chmod +x ~/.claude/skills/lark-cli-setup/scripts/lark-cli-ensure-auth
+# 2. make the scripts executable
+chmod +x ~/.claude/skills/lark-cli-setup/scripts/lark-cli-ensure-auth \
+         ~/.claude/skills/lark-cli-setup/scripts/lark-cli-check-update
 
 # 3. restart Claude Code (or start a new session) so the skill loads
 ```
+
+This only installs the skill files. The token-refresh and update-check
+scripts still need to land in `~/.local/bin` and get wired as Claude Code
+SessionStart hooks — either let `install.sh` do all of that for you, or
+follow SKILL.md's Step 5 to do it by hand.
 
 ## How to use
 
@@ -25,13 +31,15 @@ Once installed, just tell Claude something like:
 - "my token expired again, set up auto-refresh for me"
 - "onboard me onto lark-cli"
 
-Claude recognizes the trigger and walks you through the 5 steps in the skill:
+Claude recognizes the trigger and walks you through the 6 steps in the skill:
 
 1. Install `@larksuite/cli`
 2. Prepare the Feishu/Lark app credentials (appId / appSecret)
 3. `lark-cli config init --new`
 4. `lark-cli auth login --recommend`
-5. Deploy the `lark-cli-ensure-auth` auto-refresh script
+5. Deploy `lark-cli-ensure-auth` (token auto-refresh) and `lark-cli-check-update`
+   (30-day version check) as Claude Code SessionStart hooks
+6. (optional) install the official Lark skill pack
 
 ## Directory structure
 
@@ -40,7 +48,9 @@ lark-cli-setup/
 ├── SKILL.md                        # main skill file (read by Claude)
 ├── INSTALL.md                      # this file (read by humans)
 └── scripts/
-    └── lark-cli-ensure-auth        # token auto-refresh script (Device Flow)
+    ├── lark-cli-ensure-auth        # token auto-refresh script (Device Flow)
+    ├── lark-cli-check-update       # throttled npm-version check
+    └── _lark_cli_lib.sh            # shared helpers sourced by both scripts above
 ```
 
 ## Prerequisites

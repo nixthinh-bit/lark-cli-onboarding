@@ -91,13 +91,13 @@ This is the **first human step**. The App ID/Secret are the "username/password" 
 
 1. Open the developer console and log in with your normal Lark/Feishu account:
    - Lark (international): **[→ Create a custom app (open.larksuite.com)](https://open.larksuite.com/app)**
-   - Feishu (China): **[→ Tạo ứng dụng tùy chỉnh (open.feishu.cn)](https://open.feishu.cn/app)**
-2. On that page click the **Create custom app** button (Tạo ứng dụng tùy chỉnh). Give it a name like `My Claude CLI` and any icon → **Create**.
-3. You're now inside the app. On the left sidebar open **Credentials & Basic Info** (Thông tin cơ bản).
+   - Feishu (China): **[→ Create a custom app (open.feishu.cn)](https://open.feishu.cn/app)**
+2. On that page click the **Create custom app** button. Give it a name like `My Claude CLI` and any icon → **Create**.
+3. You're now inside the app. On the left sidebar open **Credentials & Basic Info**.
 4. Under **App Credentials** you'll see two values:
    - **App ID** — starts with `cli_...`, safe-ish to share.
    - **App Secret** — click the eye/**Reveal** to show it. **This is a password.**
-5. Still on that page, find **Security Settings** and **turn ON "long-lived refresh_token"** (bật refresh_token dài hạn). Without this, the CLI would ask you to log in again every couple of hours.
+5. Still on that page, find **Security Settings** and **turn ON "long-lived refresh_token"**. Without this, the CLI would ask you to log in again every couple of hours.
 6. **Copy both values and paste them into this chat.** I'll load them into the CLI for you.
 
 > ⚠️ The App Secret is a password. It's stored only in `~/.lark-cli/config.json` on this machine and `chmod 600`. I will **never** print it back to you, put it in logs, or save it to memory. If you accidentally paste it somewhere public, rotate it in the console.
@@ -203,9 +203,12 @@ Returns JSON; the user token status is at **`.identities.user.tokenStatus`** (`v
 
 ---
 
-## Step 5: Deploy the token auto-refresh script
+## Step 5: Deploy the token auto-refresh + update-check scripts
 
-A user token lasts ~2 hours. Cron jobs / background agents need automatic refresh. This skill ships `lark-cli-ensure-auth` for unattended refresh.
+A user token lasts ~2 hours. Cron jobs / background agents need automatic refresh. This skill ships two scripts plus a small shared library they both depend on:
+- `lark-cli-ensure-auth` — unattended token refresh (Step 4's Device Flow, automated)
+- `lark-cli-check-update` — throttled (~every 30 days) check for a newer `@larksuite/cli`
+- `_lark_cli_lib.sh` — shared PATH-resolution + tokenStatus-parsing helpers; **both scripts source this file from their own directory, so it must be copied alongside them**
 
 ### Install
 
@@ -213,13 +216,22 @@ A user token lasts ~2 hours. Cron jobs / background agents need automatic refres
 # 1. create the directory if missing
 mkdir -p ~/.local/bin
 
-# 2. copy the script from the skill (adjust the path to your skill location)
-cp ~/.claude/skills/lark-cli-setup/scripts/lark-cli-ensure-auth ~/.local/bin/
-chmod +x ~/.local/bin/lark-cli-ensure-auth
+# 2. copy all three files from the skill (adjust the path to your skill location)
+cp ~/.claude/skills/lark-cli-setup/scripts/lark-cli-ensure-auth  ~/.local/bin/
+cp ~/.claude/skills/lark-cli-setup/scripts/lark-cli-check-update ~/.local/bin/
+cp ~/.claude/skills/lark-cli-setup/scripts/_lark_cli_lib.sh      ~/.local/bin/
+chmod +x ~/.local/bin/lark-cli-ensure-auth ~/.local/bin/lark-cli-check-update
 
 # 3. make sure PATH includes ~/.local/bin
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc  # bash users: ~/.bashrc
 source ~/.zshrc
+
+# 4. wire both as Claude Code SessionStart hooks (install.sh does this automatically —
+#    do it by hand only if you skipped install.sh) by adding to ~/.claude/settings.json:
+#      "hooks": { "SessionStart": [
+#        {"hooks": [{"type": "command", "command": "~/.local/bin/lark-cli-ensure-auth --quiet"}]},
+#        {"hooks": [{"type": "command", "command": "~/.local/bin/lark-cli-check-update --quiet"}]}
+#      ]}
 ```
 
 ### Usage
@@ -228,15 +240,21 @@ source ~/.zshrc
 # call before Lark operations to ensure the token is usable
 lark-cli-ensure-auth           # verbose
 lark-cli-ensure-auth --quiet   # silent; also never opens a browser (safe for hooks/cron)
+
+# check for a newer @larksuite/cli (throttled to ~once every 30 days)
+lark-cli-check-update --quiet  # safe for hooks/cron; silent unless there's news
 ```
 
 ### Script logic
 
+**lark-cli-ensure-auth:**
 1. Read `lark-cli auth status` and parse `.identities.user.tokenStatus`.
 2. `valid` → exit 0 immediately.
 3. Otherwise attempt a silent refresh via a light user API call (uses the stored refresh_token, no browser).
 4. Still not valid + `--quiet`/`--no-browser` → warn and exit 1 (do not open a browser).
 5. Interactive → Device Flow: print a QR, open the browser, poll `--device-code` for up to 90s.
+
+**lark-cli-check-update:** skip instantly if checked within the last 30 days; otherwise compare the installed version against npm's `latest` and notify (or auto-update if `LARK_CLI_AUTO_UPDATE=1`).
 
 Prerequisite: the app has refresh_token enabled (see Step 2).
 

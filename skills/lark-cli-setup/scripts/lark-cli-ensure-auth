@@ -16,16 +16,10 @@
 
 set -u
 
-# --- make lark-cli findable regardless of how it was installed -----------------
-for d in \
-  "$HOME/.npm-global/bin" \
-  "$(npm config get prefix 2>/dev/null)/bin" \
-  /opt/homebrew/bin \
-  /usr/local/bin \
-  "$HOME/.local/bin"; do
-  case ":$PATH:" in *":$d:"*) ;; *) [ -d "$d" ] && PATH="$d:$PATH" ;; esac
-done
-export PATH
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./_lark_cli_lib.sh
+. "$SCRIPT_DIR/_lark_cli_lib.sh"
+lark_cli_resolve_path
 
 QUIET=""; NO_BROWSER=""
 for a in "$@"; do
@@ -41,20 +35,7 @@ if ! command -v lark-cli >/dev/null 2>&1; then
   exit 1
 fi
 
-# --- read current user token status (new shape, fallback to old) ---------------
-read_status() {
-  lark-cli auth status 2>/dev/null | python3 -c '
-import sys, json
-try:
-    d = json.load(sys.stdin)
-except Exception:
-    print("unknown"); sys.exit(0)
-u = (d.get("identities", {}) or {}).get("user", {}) or {}
-print(u.get("tokenStatus") or d.get("tokenStatus") or "unknown")
-' 2>/dev/null
-}
-
-STATUS="$(read_status)"
+STATUS="$(lark_cli_token_status)"
 if [ "$STATUS" = "valid" ]; then
   log "✅ lark-cli: user token valid"
   exit 0
@@ -67,7 +48,7 @@ log "… lark-cli: user token is '$STATUS' — attempting silent refresh (refres
 # and is part of the --recommend scope set used during setup.
 lark-cli contact +get-user --as user >/dev/null 2>&1 || true
 
-STATUS="$(read_status)"
+STATUS="$(lark_cli_token_status)"
 if [ "$STATUS" = "valid" ]; then
   log "✅ lark-cli: token refreshed silently"
   exit 0
@@ -112,7 +93,14 @@ command -v open >/dev/null 2>&1 && open "$URL" 2>/dev/null || \
 for _ in $(seq 1 30); do
   sleep 3
   R=$(lark-cli auth login --device-code "$CODE" --json 2>&1)
-  echo "$R" | grep -q '"ok": *true\|success' && { log "✅ authorized"; exit 0; }
+  echo "$R" | python3 -c '
+import sys, json
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+sys.exit(0 if d.get("ok") or d.get("success") else 1)
+' && { log "✅ authorized"; exit 0; }
 done
 log "❌ auth timed out. Run manually: lark-cli auth login --recommend"
 exit 1

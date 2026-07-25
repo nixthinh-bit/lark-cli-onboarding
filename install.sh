@@ -27,18 +27,26 @@ else
   SRC_DIR="$(mktemp -d)"
   trap 'rm -rf "$SRC_DIR"' EXIT
   printf '\033[1;36m▶\033[0m %s\n' "Fetching lark-cli-onboarding sources …"
-  git clone --depth 1 -q https://github.com/nixthinh-bit/lark-cli-onboarding.git "$SRC_DIR"
+  # Forks can point installs at themselves instead of upstream:
+  #   LARK_CLI_ONBOARDING_REPO=https://github.com/<you>/lark-cli-onboarding.git \
+  #     bash -c "$(curl -fsSL <your-raw-url>/install.sh)"
+  : "${LARK_CLI_ONBOARDING_REPO:=https://github.com/nixthinh-bit/lark-cli-onboarding.git}"
+  git clone --depth 1 -q "$LARK_CLI_ONBOARDING_REPO" "$SRC_DIR"
 fi
 SKILL_SRC="$SRC_DIR/skills/lark-cli-setup"
 SKILL_DST="$HOME/.claude/skills/lark-cli-setup"
 BIN_DST="$HOME/.local/bin"
 ENSURE="$BIN_DST/lark-cli-ensure-auth"
 UPDATER="$BIN_DST/lark-cli-check-update"
+LIB="$BIN_DST/_lark_cli_lib.sh"
 SETTINGS="$HOME/.claude/settings.json"
 
 say()  { printf '\033[1;36m▶\033[0m %s\n' "$*"; }
 ok()   { printf '\033[1;32m✓\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!\033[0m %s\n' "$*"; }
+
+# shellcheck source=skills/lark-cli-setup/scripts/_lark_cli_lib.sh
+. "$SKILL_SRC/scripts/_lark_cli_lib.sh"
 
 # --- 0. prerequisites (auto-install what's missing) ----------------------------
 # We need Node.js >=18 (+npm) and python3. Rather than bail out, try to install
@@ -107,6 +115,7 @@ ok "Prerequisites OK — node $(node -v), npm $(npm -v), python3 present."
 say "Installing @larksuite/cli (latest) …"
 npm install -g @larksuite/cli@latest >/dev/null 2>&1 || npm install -g @larksuite/cli@latest
 # resolve where npm put the binary
+lark_cli_resolve_path
 CLI="$(command -v lark-cli || echo "$(npm config get prefix)/bin/lark-cli")"
 ok "lark-cli: $("$CLI" --version 2>/dev/null || echo 'installed')"
 
@@ -129,11 +138,22 @@ cp "$SKILL_SRC/scripts/lark-cli-check-update" "$UPDATER"
 chmod +x "$UPDATER"
 ok "Helper → $UPDATER"
 
+# --- 3c. install the shared helper library (used by both scripts above) --------
+cp "$SKILL_SRC/scripts/_lark_cli_lib.sh" "$LIB"
+ok "Helper → $LIB"
+
 # make sure ~/.local/bin is on PATH for future shells
 case ":$PATH:" in
   *":$BIN_DST:"*) : ;;
   *)
-    RC="$HOME/.zshrc"; [ -n "${BASH_VERSION:-}" ] && RC="$HOME/.bashrc"
+    # Pick the rc file for the user's actual login shell ($SHELL), not the
+    # shell this installer happens to be running under (always bash here,
+    # since $BASH_VERSION is set by the interpreter regardless of $SHELL).
+    case "$(basename "${SHELL:-}")" in
+      zsh)  RC="$HOME/.zshrc" ;;
+      bash) RC="$HOME/.bashrc" ;;
+      *)    RC="$HOME/.profile" ;;
+    esac
     if ! grep -qs '.local/bin' "$RC" 2>/dev/null; then
       printf '\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$RC"
       warn "Added ~/.local/bin to PATH in $RC — open a new terminal (or 'source $RC')."
@@ -175,8 +195,7 @@ ok "SessionStart hook ready (runs '$ENSURE --quiet' — silent, never opens a br
 
 # --- 5. status + honest next steps ---------------------------------------------
 echo
-if "$CLI" auth status >/dev/null 2>&1 && \
-   "$CLI" auth status 2>/dev/null | python3 -c 'import sys,json;u=json.load(sys.stdin).get("identities",{}).get("user",{});exit(0 if u.get("tokenStatus") else 1)' 2>/dev/null; then
+if [ "$(lark_cli_token_status)" = "valid" ]; then
   ok "Existing Lark auth detected — you're ready. Try: lark-cli contact +get-user --as user"
   # Only NOW (already connected) is it worth suggesting the official skill pack —
   # bringing it up before auth just clutters a first-timer's flow. Still opt-in:

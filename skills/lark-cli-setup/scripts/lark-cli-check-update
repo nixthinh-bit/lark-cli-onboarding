@@ -25,25 +25,12 @@ STAMP="${HOME}/.lark-cli/.last-update-check"
 QUIET=""
 [ "${1:-}" = "--quiet" ] && QUIET=1
 
-# --- make lark-cli / npm findable regardless of how they were installed --------
-for d in \
-  "$HOME/.npm-global/bin" \
-  "$(npm config get prefix 2>/dev/null)/bin" \
-  /opt/homebrew/bin \
-  /usr/local/bin \
-  "$HOME/.local/bin"; do
-  case ":$PATH:" in *":$d:"*) ;; *) [ -d "$d" ] && PATH="$d:$PATH" ;; esac
-done
-export PATH
-
-say()  { [ -z "$QUIET" ] && printf '\033[1;36m▶\033[0m %s\n' "$*"; }
-ok()   { printf '\033[1;32m✓\033[0m %s\n' "$*"; }
-warn() { printf '\033[1;33m!\033[0m %s\n' "$*"; }
-
 now="$(date +%s)"
 mkdir -p "$(dirname "$STAMP")"
 
 # --- throttle: skip entirely if checked within INTERVAL days -------------------
+# Runs before anything else (PATH resolution included) so a throttled session
+# start truly costs nothing beyond a stat + date call — no subprocess spawn.
 if [ -f "$STAMP" ]; then
   last="$(cat "$STAMP" 2>/dev/null || echo 0)"
   case "$last" in ''|*[!0-9]*) last=0 ;; esac
@@ -52,6 +39,15 @@ if [ -f "$STAMP" ]; then
     exit 0
   fi
 fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./_lark_cli_lib.sh
+. "$SCRIPT_DIR/_lark_cli_lib.sh"
+lark_cli_resolve_path
+
+say()  { [ -z "$QUIET" ] && printf '\033[1;36m▶\033[0m %s\n' "$*"; }
+ok()   { printf '\033[1;32m✓\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33m!\033[0m %s\n' "$*"; }
 
 command -v lark-cli >/dev/null 2>&1 || exit 0
 command -v npm      >/dev/null 2>&1 || exit 0
