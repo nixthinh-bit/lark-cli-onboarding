@@ -19,7 +19,7 @@ Only **2 things are truly required** — Claude installs the rest (Node.js, pyth
 | # | You need | Notes |
 |---|----------|-------|
 | 1 | **Claude Pro (or higher) + Claude Code installed** | Claude Code is a terminal CLI — [install it here](https://claude.com/claude-code). Sign in with your Claude Pro account. |
-| 2 | **A Feishu/Lark app** (you can make one in ~2 min) | Click straight into the console — Lark (intl): **[→ Create custom app (open.larksuite.com)](https://open.larksuite.com/app)** · Feishu (CN): **[→ Create custom app (open.feishu.cn)](https://open.feishu.cn/app)** → **Create custom app** → copy **App ID + App Secret** → enable **"long-lived refresh_token"**. Claude walks you through **exactly what to click**. ⚠️ **Not an admin?** A self-created app usually must be **approved/enabled by your tenant admin** (scopes too) before login works — get the admin to approve first; that wait is out of your hands. Team already has an app? Ask an admin for the App ID/Secret. |
+| 2 | **A Feishu/Lark app** (usually nothing to prepare) | Claude can **register one for you** during setup, so the App Secret never has to be copied by hand or pasted into a chat. Two cases still involve an admin: your org blocks self-registered apps, or the team **already has** an app, in which case ask an admin for the **App ID + App Secret**. ⚠️ Some tenants also require an admin to **approve/enable** an app and its scopes before login works; others approve automatically. Claude tells you which case you're in and walks you through **exactly what to click**. Manual route, if you'd rather: Lark (intl): **[→ Create custom app (open.larksuite.com)](https://open.larksuite.com/app)** · Feishu (CN): **[→ Create custom app (open.feishu.cn)](https://open.feishu.cn/app)** |
 | 3 | *(recommended)* **Your phone signed into the Lark/Feishu app** | So you can **scan a QR** to approve login in ~10s. No phone? Fine — just click the login link on your computer. |
 
 **Node.js ≥ 18 & python3:** no need to pre-install. `install.sh` detects what's missing and installs it via Homebrew (macOS) / apt / dnf. **No Homebrew on your Mac?** Go to **[brew.sh](https://brew.sh)** → click the copy button (📋) on the *"Install Homebrew"* command box → paste it into the terminal and press Enter → type your **Mac password** (nothing shows as you type — that's normal) → then re-run. Claude can do this step for you too.
@@ -62,7 +62,7 @@ Open **Claude Code** and paste this, then hit Enter:
 Clone https://github.com/nixthinh-bit/lark-cli-onboarding for me, then connect lark-cli by following its instructions.
 ```
 
-Claude Code will: install anything missing (Node.js/python via Homebrew/apt) → clone the repo → run `install.sh` (installs the CLI + skill + auto-refresh) → then **guide you step by step**: how to create a custom app + copy the App ID/Secret, show a **click-to-open login link** plus a **crisp QR image to scan with your phone**, and verify the connection. You just **follow** its prompts and click **Allow once** when asked.
+Claude Code will: install anything missing (Node.js/python via Homebrew/apt) → clone the repo → run `install.sh` (installs the CLI + skill + auto-refresh) → then **guide you step by step**: set up the app (it can register one for you, so there's usually nothing to copy by hand), show a **click-to-open login link** plus a **crisp QR image to scan with your phone**, and verify the connection. You just **follow** its prompts and click **Allow once** when asked.
 
 When it's done, **restart Claude Code** once to load the new skill + hooks.
 

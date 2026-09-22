@@ -19,7 +19,7 @@ Thật ra chỉ cần **2 thứ bắt buộc** — phần còn lại (Node.js, p
 | # | Cần có | Ghi chú |
 |---|--------|---------|
 | 1 | **Claude Pro trở lên + đã cài Claude Code** | Claude Code là CLI chạy trong terminal — [cài tại đây](https://claude.com/claude-code). Đăng nhập bằng tài khoản Claude Pro. |
-| 2 | **Một app Feishu/Lark** (bạn tự tạo được, 2 phút) | Bấm thẳng vào console — Lark quốc tế: **[→ Tạo custom app (open.larksuite.com)](https://open.larksuite.com/app)** · Feishu (TQ): **[→ Tạo custom app (open.feishu.cn)](https://open.feishu.cn/app)** → **Create custom app** → lấy **App ID + App Secret** → bật **"long-lived refresh_token"**. Claude dẫn bạn **từng bước bấm gì**. ⚠️ **Không phải admin?** App tự tạo thường phải **chờ admin tenant duyệt/bật** (và duyệt scope) thì mới đăng nhập được — nhờ admin duyệt trước; đây là bước chờ nằm ngoài tầm bạn. Công ty đã có app sẵn → xin admin App ID/Secret. |
+| 2 | **Một app Feishu/Lark** (thường không phải chuẩn bị gì) | Claude **tự đăng ký app cho bạn** trong lúc cài, nên App Secret không phải copy tay hay dán vào khung chat. Còn hai trường hợp vẫn cần admin: công ty bạn cấm tự tạo app, hoặc team **đã có app sẵn**, lúc đó xin admin **App ID + App Secret**. ⚠️ Một số tenant còn bắt admin **duyệt/bật** app và scope thì mới đăng nhập được, tenant khác thì duyệt tự động. Claude sẽ cho bạn biết mình rơi vào trường hợp nào và dẫn **từng bước bấm gì**. Muốn làm tay thì vào: Lark quốc tế: **[→ Tạo custom app (open.larksuite.com)](https://open.larksuite.com/app)** · Feishu (TQ): **[→ Tạo custom app (open.feishu.cn)](https://open.feishu.cn/app)** |
 | 3 | *(khuyến nghị)* **Điện thoại đã đăng nhập app Lark/Feishu** | Để **quét QR** duyệt đăng nhập trong 10 giây, khỏi loay hoay browser. Không có cũng được — bạn bấm link đăng nhập trên máy. |
 
 **Node.js ≥ 18 & python3:** không cần cài trước. `install.sh` tự phát hiện thiếu và cài qua Homebrew (macOS) / apt / dnf. Máy Mac **chưa có Homebrew**? Vào **[brew.sh](https://brew.sh)** → bấm nút copy (📋) ở ô lệnh mục *"Install Homebrew"* → dán vào terminal, Enter → nhập **mật khẩu máy Mac** (gõ không hiện chữ là bình thường) → xong chạy lại. Claude cũng làm hộ được bước này.
@@ -62,7 +62,7 @@ Mở **Claude Code**, dán đúng câu này rồi Enter:
 Pull repo https://github.com/nixthinh-bit/lark-cli-onboarding giúp tôi, rồi kết nối lark-cli theo hướng dẫn trong đó.
 ```
 
-Claude Code sẽ tự: cài các thứ còn thiếu (Node.js/python qua Homebrew/apt) → clone repo → chạy `install.sh` (cài CLI + skill + auto-refresh) → rồi **dẫn bạn từng bước**: cách tạo custom app + lấy App ID/Secret, hiện **link đăng nhập bấm-là-vào** kèm **QR ảnh nét để quét bằng điện thoại**, kiểm tra kết nối. Bạn chỉ việc **làm theo** những gì nó hỏi và bấm **Allow once** khi được hỏi.
+Claude Code sẽ tự: cài các thứ còn thiếu (Node.js/python qua Homebrew/apt) → clone repo → chạy `install.sh` (cài CLI + skill + auto-refresh) → rồi **dẫn bạn từng bước**: lo phần app (nó tự đăng ký được, nên thường không phải copy gì bằng tay), hiện **link đăng nhập bấm-là-vào** kèm **QR ảnh nét để quét bằng điện thoại**, kiểm tra kết nối. Bạn chỉ việc **làm theo** những gì nó hỏi và bấm **Allow once** khi được hỏi.
 
 Xong thì **khởi động lại Claude Code** một lần để nạp skill + hook mới.
 

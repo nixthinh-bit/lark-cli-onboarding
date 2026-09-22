@@ -81,11 +81,53 @@ lark-cli --version   # expected: lark-cli version 1.x.x
 
 ---
 
-## Step 2: Create a custom app & get the App ID / App Secret
+## Step 2: Give the CLI an app
 
-This is the **first human step**. The App ID/Secret are the "username/password" that lets the CLI talk to Lark. Walk the user through it slowly — a non-coder has never seen the developer console.
+The CLI needs a Lark/Feishu **custom app** to talk through. There are two ways to get one. Before either, find out whether this machine already has one.
 
-> If the team **already has an app**, skip creating one: ask the admin for the **App ID + App Secret** (and to enable long-lived refresh_token), then jump to Step 3.
+### 2a. Check what's already there
+
+```bash
+lark-cli config show
+```
+
+| What you see | What to do |
+|---|---|
+| An app is configured **and** `lark-cli auth status` shows `.identities.user.tokenStatus: valid` | Nothing to set up. Skip ahead to **Verify the connection**. |
+| An app is configured, token is `expired` / `needs_refresh` | A **login** problem, not a setup problem. Go straight to Step 4. Do **not** create a second app. |
+| No app configured | Continue with Path A below. |
+
+> ⚠️ **Never create an app just to "retry" a failed step.** Nothing in the CLI can delete an app once it exists in the tenant (`lark-cli config remove` only clears local config), so every stray attempt leaves an orphan app that a human has to hunt down in the console. Check `config show` first, every time.
+
+### 2b. Path A (recommended): let the CLI create the app
+
+`lark-cli config init --new` registers a new app through a browser flow. Nothing gets copied by hand, and the **App Secret never passes through the chat**; the CLI writes it straight to the Keychain (or, where there is no Keychain, to the `0600` config file).
+
+```bash
+# brand: `lark` (international) or `feishu` (China)
+lark-cli config init --new --brand lark --lang en
+```
+
+**Two things matter for you as the agent:**
+1. **The command blocks** until the user finishes in the browser. Run it in the **background** and pull the verification URL out of its output. Don't run it in the foreground and sit there until your tool times out.
+2. **Give the user the URL as a clickable markdown hyperlink**, and offer the QR route too (same pattern as Step 4). Then end your turn and wait for them to confirm they approved it.
+
+> 📌 **Not yet pinned down in this repo.** `config init --help` documents that `--new` creates the app and blocks on a browser step, and a one-off test confirmed the app, the secret and a working refresh_token all land correctly. What nobody has written down yet is the **exact shape of the output** you parse that URL out of (`config init` has no `--json` flag, so it is plain text). Read the URL out of whatever the command actually prints instead of assuming a field name, and **the next time you run this in a real onboarding, capture the output and replace this note with it.**
+
+If `--new` fails for any reason (the org blocks self-registration, the browser step errors, an older CLI lacks the flag), **do not retry it**. Each retry risks another orphan app. Move to Step 3.
+
+### 2c. Path B: an app that already exists, or one that must be made by hand
+
+Go to Step 3 instead when any of these is true:
+- the team **already has an app** (ask an admin for the App ID + App Secret), or
+- the org **doesn't allow** self-registered apps and wants one created and released in the console, or
+- Path A failed.
+
+---
+
+## Step 3: Path B, using an existing app's credentials
+
+The App ID/Secret are the "username/password" that lets the CLI talk to Lark. Walk the user through this slowly; a non-coder has never seen the developer console.
 
 **Tell the user to do this in their browser.** Send the console link as a clickable hyperlink so one click lands them on the create-app page (pick the edition):
 
@@ -97,23 +139,21 @@ This is the **first human step**. The App ID/Secret are the "username/password" 
 4. Under **App Credentials** you'll see two values:
    - **App ID** — starts with `cli_...`, safe-ish to share.
    - **App Secret** — click the eye/**Reveal** to show it. **This is a password.**
-5. Still on that page, find **Security Settings** and **turn ON "long-lived refresh_token"**. Without this, the CLI would ask you to log in again every couple of hours.
+5. Still on that page, find **Security Settings** and **turn ON "long-lived refresh_token"**. Without this, the CLI would ask you to log in again every couple of hours. (`auth login --recommend` in Step 4 also asks for `offline_access`, so on some tenants the toggle is already moot. Turning it on anyway costs nothing.)
 6. **Copy both values and paste them into this chat.** I'll load them into the CLI for you.
 
 > ⚠️ The App Secret is a password. On macOS the CLI keeps it in your **login Keychain**, and `~/.lark-cli/config.json` stores only a reference to it (`"appSecret": {"source": "keychain", "id": "appsecret:cli_…"}`), never the value. Where no Keychain is available (Linux/WSL) it stays in that file, which the CLI creates `0600`. Either way I will **never** print it back to you, put it in logs, or save it to memory. If you accidentally paste it somewhere public, rotate it in the console.
 
-> 🏢 **Not a workspace admin? There's a wait here.** A self-created custom app usually can't be used until the **tenant admin approves/enables it** for the workspace, and sensitive scopes may need admin approval too. Depending on the org's settings, `auth login` (Step 4) can **fail until that approval lands**. If the user isn't the admin:
+> 🏢 **Not a workspace admin? Budget for a wait.** Depending on the org's settings, a self-created custom app may not be usable until the **tenant admin approves/enables it**, and sensitive scopes can need approval on top of that, so `auth login` (Step 4) may **fail until that lands**. It isn't universal: on at least one tenant every recommended scope came back auto-approved with no admin involved. Don't promise either outcome. If the wait does hit and the user isn't the admin:
 > - Tell them to **request approval / release** in the console (there's usually a *"Request release"* / *"Version management"* action) and **ping their Lark admin** to approve it.
 > - This is an **out-of-your-hands wait** — a human on the admin side must click approve. Set that expectation; don't loop retrying `auth login`. Pause setup and have the user come back once the admin confirms.
 > - If Step 4 or a later command errors with a permissions problem, the CLI prints a **`console_url`** — hand that to the admin to enable the missing scope. (If the user *is* the admin, they can self-approve and continue immediately.)
 
-**As the AI agent:** wait for the user to paste App ID + App Secret before running Step 3. Do not proceed with placeholders.
+**As the AI agent:** wait for the user to paste both values before running the command below. Do not proceed with placeholders.
 
----
+### Load the credentials (no ugly interactive prompt)
 
-## Step 3: Load the credentials (no ugly interactive prompt)
-
-Store the App ID/Secret **non-interactively** — this avoids the clunky prompt and keeps the secret off the process list (it's read from stdin):
+Store the App ID/Secret **non-interactively**; this avoids the clunky prompt and keeps the secret off the process list (it's read from stdin):
 
 ```bash
 # brand: `lark` (international) or `feishu` (China)
@@ -122,7 +162,7 @@ printf '%s' "<APP_SECRET>" | lark-cli config init \
 ```
 
 - Substitute the values the user pasted. Read the secret from a shell variable if you prefer, but **never echo it back**.
-- ⚠️ `lark-cli config init --new` is **not** a fallback for this command. It doesn't prompt for existing credentials, it registers a **brand new app** in the tenant via a browser flow. Useful, but it's a different path (and no CLI command can delete an app it creates), so don't reach for it just because the line above failed.
+- ⚠️ Want a **brand new** app instead of an existing one? That's Path A in Step 2 (`config init --new`), not this command. `--new` never prompts for credentials, it registers an app in the tenant, and nothing in the CLI can delete one afterwards, so don't reach for it just because the line above failed.
 
 Where the secret ends up: on macOS, in the login Keychain, with `~/.lark-cli/config.json` holding only a `{"source": "keychain", "id": …}` reference. Where no Keychain is available (Linux/WSL) it stays in that file. The CLI creates the file `0600` either way, so there's no `chmod` to run by hand. `lark-cli config keychain-downgrade` (macOS only) forces the file form if an org ever requires it.
 
@@ -258,7 +298,7 @@ lark-cli-check-update --quiet  # safe for hooks/cron; silent unless there's news
 
 **lark-cli-check-update:** skip instantly if checked within the last 30 days; otherwise compare the installed version against npm's `latest` and notify (or auto-update if `LARK_CLI_AUTO_UPDATE=1`).
 
-Prerequisite: the app has refresh_token enabled (see Step 2).
+Prerequisite: the login carries a refresh_token. `auth login --recommend` (Step 4) asks for `offline_access`, and the Path B console toggle in Step 3 covers the same ground.
 
 ---
 

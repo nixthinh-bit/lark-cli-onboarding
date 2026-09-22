@@ -12,8 +12,10 @@
 #   4. Wires a Claude Code SessionStart hook so the USER token stays fresh (no browser pop)
 #
 # What it CANNOT automate (these need a human — same as any Lark tool):
-#   - Getting a Feishu App ID / App Secret (open.feishu.cn) and enabling long-lived refresh_token
-#   - The first browser OAuth approval:  lark-cli config init --new  &&  lark-cli auth login --recommend
+#   - The first browser approval. `lark-cli config init --new` registers the app and
+#     `lark-cli auth login --recommend` grants the scopes; both open a browser once.
+#   - Supplying an existing App ID / App Secret, if the org forbids self-registered
+#     apps or the team already has one (open.feishu.cn)
 
 set -euo pipefail
 
@@ -209,9 +211,11 @@ if [ "$(lark_cli_token_status)" = "valid" ]; then
     echo "    …or just ask Claude Code to do it — the lark-cli-setup skill offers this step."
   fi
 else
-  warn "No Lark auth yet. Finish the 2 human steps (once):"
-  echo  "    1) Create a Feishu app + App ID/Secret at https://open.feishu.cn (enable long-lived refresh_token)"
-  echo  "    2) lark-cli config init --new   &&   lark-cli auth login --recommend"
+  warn "No Lark auth yet. One browser approval to go:"
+  echo  "    lark-cli config show                                  # already set up? then you only need the login below"
+  echo  "    lark-cli config init --new   &&   lark-cli auth login --recommend"
+  echo  "    (--new registers an app for you. Already have one, or your org forbids self-registered apps?"
+  echo  "     Get the App ID/Secret from an admin at https://open.feishu.cn and run: lark-cli config init --app-id <ID> --app-secret-stdin)"
   echo  "    …or just open Claude Code and say: \"kết nối giúp tôi lark-cli\" (the skill will walk you through it)."
 fi
 echo
