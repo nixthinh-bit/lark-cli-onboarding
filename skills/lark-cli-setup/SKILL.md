@@ -100,7 +100,7 @@ This is the **first human step**. The App ID/Secret are the "username/password" 
 5. Still on that page, find **Security Settings** and **turn ON "long-lived refresh_token"**. Without this, the CLI would ask you to log in again every couple of hours.
 6. **Copy both values and paste them into this chat.** I'll load them into the CLI for you.
 
-> ⚠️ The App Secret is a password. It's stored only in `~/.lark-cli/config.json` on this machine and `chmod 600`. I will **never** print it back to you, put it in logs, or save it to memory. If you accidentally paste it somewhere public, rotate it in the console.
+> ⚠️ The App Secret is a password. On macOS the CLI keeps it in your **login Keychain**, and `~/.lark-cli/config.json` stores only a reference to it (`"appSecret": {"source": "keychain", "id": "appsecret:cli_…"}`), never the value. Where no Keychain is available (Linux/WSL) it stays in that file, which the CLI creates `0600`. Either way I will **never** print it back to you, put it in logs, or save it to memory. If you accidentally paste it somewhere public, rotate it in the console.
 
 > 🏢 **Not a workspace admin? There's a wait here.** A self-created custom app usually can't be used until the **tenant admin approves/enables it** for the workspace, and sensitive scopes may need admin approval too. Depending on the org's settings, `auth login` (Step 4) can **fail until that approval lands**. If the user isn't the admin:
 > - Tell them to **request approval / release** in the console (there's usually a *"Request release"* / *"Version management"* action) and **ping their Lark admin** to approve it.
@@ -119,13 +119,12 @@ Store the App ID/Secret **non-interactively** — this avoids the clunky prompt 
 # brand: `lark` (international) or `feishu` (China)
 printf '%s' "<APP_SECRET>" | lark-cli config init \
   --app-id "<APP_ID>" --app-secret-stdin --brand lark --lang en
-chmod 600 ~/.lark-cli/config.json
 ```
 
 - Substitute the values the user pasted. Read the secret from a shell variable if you prefer, but **never echo it back**.
-- Fallback (older CLI or if the above balks): run `lark-cli config init --new` and guide the user through the interactive prompts (`brand`, `appId`, `appSecret`, `lang`).
+- ⚠️ `lark-cli config init --new` is **not** a fallback for this command. It doesn't prompt for existing credentials, it registers a **brand new app** in the tenant via a browser flow. Useful, but it's a different path (and no CLI command can delete an app it creates), so don't reach for it just because the line above failed.
 
-The config lives at `~/.lark-cli/config.json`; the `chmod 600` locks it to the current user.
+Where the secret ends up: on macOS, in the login Keychain, with `~/.lark-cli/config.json` holding only a `{"source": "keychain", "id": …}` reference. Where no Keychain is available (Linux/WSL) it stays in that file. The CLI creates the file `0600` either way, so there's no `chmod` to run by hand. `lark-cli config keychain-downgrade` (macOS only) forces the file form if an org ever requires it.
 
 ---
 
@@ -206,9 +205,12 @@ Returns JSON; the user token status is at **`.identities.user.tokenStatus`** (`v
 ## Step 5: Deploy the token auto-refresh + update-check scripts
 
 A user token lasts ~2 hours. Cron jobs / background agents need automatic refresh. This skill ships two scripts plus a small shared library they both depend on:
+
 - `lark-cli-ensure-auth` — unattended token refresh (Step 4's Device Flow, automated)
 - `lark-cli-check-update` — throttled (~every 30 days) check for a newer `@larksuite/cli`
 - `_lark_cli_lib.sh` — shared PATH-resolution + tokenStatus-parsing helpers; **both scripts source this file from their own directory, so it must be copied alongside them**
+
+> ⚠️ **Set the expectation: the refresh window is ~7 days, rolling.** The access token lasts ~2h and the hook renews it silently, but the refresh_token itself expires roughly 7 days after the **last** refresh. Anyone who opens Claude Code at least once a week never sees a login screen again. Anyone back from a two-week holiday has to approve `auth login` once more. That is the design, not a broken setup, so tell the user up front rather than letting them find out.
 
 ### Install
 
@@ -318,7 +320,7 @@ lark-cli auth login --scope "<missing_scope>"
 - **Never** print `appSecret` / `accessToken` / `refreshToken` in plaintext to the terminal, logs, or memory.
 - **Confirm intent** before any write/delete operation.
 - Preview risky requests with `--dry-run` first.
-- `~/.lark-cli/config.json` holds a plaintext secret → always `chmod 600`.
+- On macOS the App Secret and the tokens live in the login Keychain, not in `~/.lark-cli/config.json`; that file holds a reference. Where they do land in files, the CLI writes them `0600` already. Don't loosen that.
 - Never commit `~/.lark-cli/` to Git.
 
 ---

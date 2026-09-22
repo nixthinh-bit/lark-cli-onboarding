@@ -8,7 +8,7 @@
 ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue)
 ![license](https://img.shields.io/badge/license-MIT-yellow)
 
-This kit lets [Claude Code](https://claude.com/claude-code) drive your **Lark/Feishu** workspace — read mail, summarize meetings, manage tasks, send messages, create docs, work with Base — in natural language, right in your terminal. It bundles the setup + login + **automatic token refresh** so you never have to log in again every 2 hours.
+This kit lets [Claude Code](https://claude.com/claude-code) drive your **Lark/Feishu** workspace — read mail, summarize meetings, manage tasks, send messages, create docs, work with Base — in natural language, right in your terminal. It bundles the setup + login + **automatic token refresh** so you're not logging in every 2 hours. Use it at least once a week and you won't see a login screen at all; after about 7 idle days, Lark asks for one fresh approval.
 
 ---
 
@@ -105,7 +105,7 @@ lark-cli calendar +agenda  --as user      # today's agenda
 
 The installer wires two `SessionStart` hooks into `~/.claude/settings.json` (they run each time Claude Code starts):
 
-- **Keeps the token fresh** — `lark-cli-ensure-auth --quiet` silently refreshes via the refresh_token and **never opens a browser**. The Lark token (~2h) is fully separate from your Claude quota.
+- **Keeps the token fresh** — `lark-cli-ensure-auth --quiet` silently refreshes via the refresh_token and **never opens a browser**. The Lark token (~2h) is fully separate from your Claude quota. The refresh_token itself rolls on a ~7 day window, so going a week or more without opening Claude Code costs you one approval, nothing more.
 - **Nudges CLI updates (every 30 days by default)** — `lark-cli-check-update --quiet` compares your installed version against the latest on npm. Between checks it exits instantly with **no network call**, so it never slows a session down.
 
 Tune it with environment variables (set in `~/.zshrc` or `~/.bashrc`):
